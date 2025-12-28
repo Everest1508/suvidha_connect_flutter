@@ -85,8 +85,8 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               // Animated logo container
               Container(
-                width: 140,
-                height: 140,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -103,8 +103,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   children: [
                     // Outer rotating ring
                     Container(
-                      width: 130,
-                      height: 130,
+                      width: 150,
+                      height: 150,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -120,8 +120,8 @@ class _SplashScreenState extends State<SplashScreen> {
                         ),
                     // Inner pulsing circle
                     Container(
-                      width: 100,
-                      height: 100,
+                      width: 120,
+                      height: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white.withOpacity(0.1),
@@ -169,7 +169,7 @@ class _SplashScreenState extends State<SplashScreen> {
               
               // App name
               Text(
-                'Suvidha Connect',
+                'Suvidha',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,

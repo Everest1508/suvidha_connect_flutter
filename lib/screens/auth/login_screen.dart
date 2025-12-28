@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -178,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -199,10 +200,10 @@ class _LoginScreenState extends State<LoginScreen> {
               
               const SizedBox(height: 4),
               
-              const Text(
+              Text(
                 'WELCOME BACK',
                 style: TextStyle(
-                  color: AppColors.foreground,
+                  color: context.foregroundColor,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -217,7 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Email',
                     style: TextStyle(
-                      color: AppColors.mutedForeground,
+                      color: context.mutedForegroundColor,
                       fontSize: 14,
                     ),
                   ),
@@ -240,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Password',
                     style: TextStyle(
-                      color: AppColors.mutedForeground,
+                      color: context.mutedForegroundColor,
                       fontSize: 14,
                     ),
                   ),
@@ -252,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       suffixIcon: IconButton(
                         icon: Icon(
                           _showPassword ? Iconsax.eye_slash : Iconsax.eye,
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -272,10 +273,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: const Text(
+                  child: Text(
                     'Forgot Password',
                     style: TextStyle(
-                      color: AppColors.foreground,
+                      color: context.foregroundColor,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -322,10 +323,10 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => context.go('/signup?role=${widget.role ?? "customer"}'),
-                  child: const Text(
+                  child: Text(
                     'SIGN UP',
                     style: TextStyle(
-                      color: AppColors.foreground,
+                      color: context.foregroundColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),

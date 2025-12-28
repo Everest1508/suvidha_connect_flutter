@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -64,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -76,11 +77,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Services Grid Section
-                    const Text(
+                    Text(
                       'What do you need help with?',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
+                        color: context.foregroundColor,
                       ),
                     ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                     
@@ -156,9 +158,9 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () => context.push('/explore/$serviceSlug'),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: context.cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.borderColor),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.03),
@@ -186,9 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 Text(
                   serviceName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
+                    color: context.foregroundColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -210,11 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Recent Reviews',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
+                color: context.foregroundColor,
               ),
             ),
             TextButton(
@@ -247,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 'No reviews yet',
                 style: TextStyle(
-                  color: AppColors.mutedForeground,
+                  color: context.mutedForegroundColor,
                   fontSize: 14,
                 ),
               ),
@@ -261,9 +265,9 @@ class _HomeScreenState extends State<HomeScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.borderColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,15 +280,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             review['customer_name'] ?? 'Anonymous',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
+                              color: context.foregroundColor,
                             ),
                           ),
                           if (review['service_name'] != null)
                             Text(
                               'for ${review['service_name']}',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 12,
                               ),
                             ),
@@ -297,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icons.star,
                             color: i < (review['rating'] as int? ?? 0)
                                 ? AppColors.amber
-                                : AppColors.muted,
+                                : context.mutedColor,
                             size: 16,
                           ),
                         ),
@@ -309,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       review['comment'],
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 14,
                       ),
                     ),

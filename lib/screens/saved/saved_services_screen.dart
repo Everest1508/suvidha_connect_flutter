@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -123,7 +124,7 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -132,13 +133,14 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
             // Title
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: const Row(
+              child: Row(
                 children: [
                   Text(
                     'Explore',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      color: context.foregroundColor,
                     ),
                   ),
                 ],
@@ -149,9 +151,9 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: context.cardColor,
                 border: Border(
-                  bottom: BorderSide(color: AppColors.border, width: 1),
+                  bottom: BorderSide(color: context.borderColor, width: 1),
                 ),
               ),
               child: Row(
@@ -319,7 +321,7 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.card,
+                      color: context.cardColor,
                       shape: BoxShape.circle,
                       border: Border.all(color: iconColor, width: 2),
                       boxShadow: [

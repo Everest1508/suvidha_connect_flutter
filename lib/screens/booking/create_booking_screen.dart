@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -193,7 +194,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -206,11 +207,12 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Book Service',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          color: context.foregroundColor,
                         ),
                       ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                       
@@ -254,9 +256,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.card,
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,9 +281,12 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                     activeColor: AppColors.primary,
                                   ),
                                   Expanded(
-                                    child: const Text(
+                                    child: Text(
                                       'Use saved address',
-                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: context.foregroundColor,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -355,7 +360,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: _useSavedAddress,
-                          fillColor: _useSavedAddress ? AppColors.muted.withOpacity(0.3) : null,
+                          fillColor: _useSavedAddress ? context.mutedColor.withOpacity(0.3) : null,
                         ),
                         maxLines: 3,
                         validator: (value) {
@@ -374,7 +379,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.borderColor),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -388,7 +393,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                     Text(
                                       'Scheduled Date & Time',
                                       style: TextStyle(
-                                        color: AppColors.mutedForeground,
+                                        color: context.mutedForegroundColor,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -399,8 +404,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                           : 'Select date and time (optional)',
                                       style: TextStyle(
                                         color: _selectedDate != null
-                                            ? AppColors.foreground
-                                            : AppColors.mutedForeground,
+                                            ? context.foregroundColor
+                                            : context.mutedForegroundColor,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -409,7 +414,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                               ),
                               Icon(
                                 Iconsax.arrow_right_3,
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                               ),
                             ],
                           ),

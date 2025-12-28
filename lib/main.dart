@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
+import 'services/theme_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Set system UI overlay style
@@ -25,18 +26,34 @@ void main() {
   runApp(const SuvidhaConnectApp());
 }
 
-class SuvidhaConnectApp extends StatelessWidget {
+class SuvidhaConnectApp extends StatefulWidget {
   const SuvidhaConnectApp({super.key});
 
   @override
+  State<SuvidhaConnectApp> createState() => _SuvidhaConnectAppState();
+}
+
+class _SuvidhaConnectAppState extends State<SuvidhaConnectApp> {
+  @override
+  void initState() {
+    super.initState();
+    ThemeService.initialize();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Suvidha Connect',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
-      routerConfig: appRouter,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.themeNotifier,
+      builder: (context, themeMode, child) {
+        return MaterialApp.router(
+          title: 'Suvidha',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          routerConfig: appRouter,
+        );
+      },
     );
   }
 }

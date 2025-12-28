@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -107,7 +108,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -118,11 +119,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Notifications',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: context.foregroundColor,
                       ),
                     ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                     
@@ -144,13 +146,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Icon(
                               Iconsax.notification,
                               size: 80,
-                              color: AppColors.mutedForeground.withOpacity(0.5),
+                              color: context.mutedForegroundColor.withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No notifications yet',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -186,10 +188,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isRead ? AppColors.card : AppColors.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isRead ? AppColors.border : AppColors.primary.withOpacity(0.3),
+          color: isRead ? context.borderColor : AppColors.primary.withOpacity(0.3),
           width: isRead ? 1 : 1.5,
         ),
       ),
@@ -222,13 +224,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         title,
                         style: TextStyle(
                           fontWeight: isRead ? FontWeight.w500 : FontWeight.w600,
+                          color: context.foregroundColor,
                         ),
                       ),
                     ),
                     Text(
                       time,
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 11,
                       ),
                     ),
@@ -238,7 +241,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Text(
                   message,
                   style: TextStyle(
-                    color: AppColors.mutedForeground,
+                    color: context.mutedForegroundColor,
                     fontSize: 13,
                   ),
                 ),

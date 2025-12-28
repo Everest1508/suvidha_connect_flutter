@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -89,7 +90,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -103,11 +104,12 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Saved Addresses',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
+                            color: context.foregroundColor,
                           ),
                         ),
                         IconButton(
@@ -126,7 +128,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                     Text(
                       'Manage your saved addresses for quick booking',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 14,
                       ),
                     ).animate(delay: 100.ms).fadeIn(duration: 500.ms),
@@ -155,9 +157,10 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 _error!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
+                                  color: context.foregroundColor,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -178,13 +181,13 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                             Icon(
                               Iconsax.location,
                               size: 80,
-                              color: AppColors.mutedForeground.withOpacity(0.5),
+                              color: context.mutedForegroundColor.withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No saved addresses',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -192,7 +195,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                             Text(
                               'Add an address to use it for bookings',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 14,
                               ),
                             ),
@@ -234,10 +237,10 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDefault ? AppColors.primary : AppColors.border,
+          color: isDefault ? AppColors.primary : context.borderColor,
           width: isDefault ? 2 : 1,
         ),
       ),
@@ -257,9 +260,10 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                   const SizedBox(width: 8),
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
+                      color: context.foregroundColor,
                     ),
                   ),
                   if (isDefault) ...[
@@ -298,7 +302,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
           Text(
             fullAddress,
             style: TextStyle(
-              color: AppColors.mutedForeground,
+              color: context.mutedForegroundColor,
               fontSize: 14,
             ),
           ),

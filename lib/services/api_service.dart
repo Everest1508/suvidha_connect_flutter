@@ -10,8 +10,8 @@ class ApiService {
   // Android Emulator: http://10.0.2.2:8000/api
   // iOS Simulator: http://localhost:8000/api
   // Physical Device: http://YOUR_COMPUTER_IP:8000/api (e.g., http://192.168.1.100:8000/api)
-  static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
-  // static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
+  static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
+  // static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
   
   // Test connection
   static Future<bool> testConnection() async {
@@ -1257,6 +1257,36 @@ class ApiService {
       }
     } catch (e) {
       print('Complete booking error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+  
+  // Cancel a booking
+  static Future<Map<String, dynamic>> cancelBooking(int bookingId) async {
+    try {
+      print('Cancelling booking: $bookingId');
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/cancel/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Cancel booking error: $e');
       return {'success': false, 'error': {'message': e.toString()}};
     }
   }

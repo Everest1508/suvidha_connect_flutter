@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -109,7 +110,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Provider: ${booking['provider_name'] ?? 'Provider'}',
-                  style: TextStyle(color: AppColors.mutedForeground),
+                  style: TextStyle(color: context.mutedForegroundColor),
                 ),
                 const SizedBox(height: 16),
                 const Text('Rating:'),
@@ -130,7 +131,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                             : Iconsax.star,
                         color: selectedRating != null && rating <= selectedRating!
                             ? Colors.amber
-                            : AppColors.mutedForeground,
+                            : context.mutedForegroundColor,
                         size: 32,
                       ),
                     );
@@ -199,7 +200,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -210,11 +211,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'My Reviews',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: context.foregroundColor,
                       ),
                     ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                     
@@ -223,7 +225,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                     Text(
                       'Review your completed services',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 14,
                       ),
                     ).animate(delay: 100.ms).fadeIn(duration: 500.ms),
@@ -252,9 +254,10 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 _error!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
+                                  color: context.foregroundColor,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -275,13 +278,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                             Icon(
                               Iconsax.star,
                               size: 80,
-                              color: AppColors.mutedForeground.withOpacity(0.5),
+                              color: context.mutedForegroundColor.withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No completed services',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -289,7 +292,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                             Text(
                               'Complete a service to review it',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 14,
                               ),
                             ),
@@ -334,9 +337,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,16 +353,17 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   children: [
                     Text(
                       serviceName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
+                        color: context.foregroundColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Provider: $providerName',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 13,
                       ),
                     ),
@@ -368,7 +372,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       Text(
                         'Completed: $completedDateStr',
                         style: TextStyle(
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                           fontSize: 12,
                         ),
                       ),

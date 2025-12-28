@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 
 class RoleSelectScreen extends StatelessWidget {
   const RoleSelectScreen({super.key});
@@ -130,9 +131,9 @@ class RoleSelectScreen extends StatelessWidget {
 
           // Bottom section with role selection
           Container(
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: context.backgroundColor,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(32),
                 topRight: Radius.circular(32),
               ),
@@ -145,7 +146,7 @@ class RoleSelectScreen extends StatelessWidget {
                 Text(
                   'Enter as a...',
                   style: TextStyle(
-                    color: AppColors.mutedForeground,
+                    color: context.mutedForegroundColor,
                     fontSize: 14,
                   ),
                 ),
@@ -161,14 +162,14 @@ class RoleSelectScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(50),
                       ),
-                      side: const BorderSide(color: AppColors.border, width: 1.5),
+                      side: BorderSide(color: context.borderColor, width: 1.5),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Service Provider',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.foreground,
+                        color: context.foregroundColor,
                       ),
                     ),
                   ),
@@ -186,14 +187,14 @@ class RoleSelectScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(50),
                       ),
-                      side: const BorderSide(color: AppColors.border, width: 1.5),
+                      side: BorderSide(color: context.borderColor, width: 1.5),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Service Consumer',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.foreground,
+                        color: context.foregroundColor,
                       ),
                     ),
                   ),

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -81,7 +82,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -94,11 +95,12 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Add New Address',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          color: context.foregroundColor,
                         ),
                       ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                       
@@ -255,8 +257,14 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                             _isDefault = value ?? false;
                           });
                         },
-                        title: const Text('Set as default address'),
-                        subtitle: const Text('This address will be used by default for bookings'),
+                        title: Text(
+                          'Set as default address',
+                          style: TextStyle(color: context.foregroundColor),
+                        ),
+                        subtitle: Text(
+                          'This address will be used by default for bookings',
+                          style: TextStyle(color: context.mutedForegroundColor),
+                        ),
                         activeColor: AppColors.primary,
                       ).animate(delay: 600.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                       

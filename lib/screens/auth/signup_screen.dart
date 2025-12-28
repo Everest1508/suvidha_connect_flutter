@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -208,7 +209,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -218,10 +219,10 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 32),
               
               // Header
-              const Text(
+              Text(
                 'WELCOME',
                 style: TextStyle(
-                  color: AppColors.foreground,
+                  color: context.foregroundColor,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -265,7 +266,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   Text(
                     'Password',
                     style: TextStyle(
-                      color: AppColors.mutedForeground,
+                      color: context.mutedForegroundColor,
                       fontSize: 14,
                     ),
                   ),
@@ -277,7 +278,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       suffixIcon: IconButton(
                         icon: Icon(
                           _showPassword ? Iconsax.eye_slash : Iconsax.eye,
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -299,7 +300,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   Text(
                     'Confirm Password',
                     style: TextStyle(
-                      color: AppColors.mutedForeground,
+                      color: context.mutedForegroundColor,
                       fontSize: 14,
                     ),
                   ),
@@ -311,7 +312,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       suffixIcon: IconButton(
                         icon: Icon(
                           _showConfirmPassword ? Iconsax.eye_slash : Iconsax.eye,
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -368,7 +369,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     Text(
                       'Already have account? ',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 14,
                       ),
                     ),
@@ -379,10 +380,10 @@ class _SignupScreenState extends State<SignupScreen> {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
+                      child: Text(
                         'SIGN IN',
                         style: TextStyle(
-                          color: AppColors.foreground,
+                          color: context.foregroundColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -410,7 +411,7 @@ class _SignupScreenState extends State<SignupScreen> {
         Text(
           label,
           style: TextStyle(
-            color: AppColors.mutedForeground,
+            color: context.mutedForegroundColor,
             fontSize: 14,
           ),
         ),

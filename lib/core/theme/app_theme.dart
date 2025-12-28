@@ -143,6 +143,35 @@ class AppTheme {
           side: const BorderSide(color: AppColors.borderDark),
         ),
       ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.primaryForeground,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.foregroundDark,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50),
+          ),
+          side: const BorderSide(color: AppColors.borderDark, width: 1.5),
+          textStyle: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: false,
         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
@@ -159,6 +188,17 @@ class AppTheme {
           color: AppColors.mutedForegroundDark,
           fontSize: 14,
         ),
+        hintStyle: GoogleFonts.poppins(
+          color: AppColors.mutedForegroundDark,
+          fontSize: 14,
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.primary,
+        selectedItemColor: AppColors.primaryForeground,
+        unselectedItemColor: Colors.white70,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -47,7 +48,7 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -58,11 +59,12 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Explore Services',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: context.foregroundColor,
                       ),
                     ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                     
@@ -71,7 +73,7 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
                     Text(
                       'Browse available service categories',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 14,
                       ),
                     ).animate(delay: 100.ms).fadeIn(duration: 500.ms),
@@ -94,13 +96,13 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
                             Icon(
                               Iconsax.category,
                               size: 80,
-                              color: AppColors.mutedForeground.withOpacity(0.5),
+                              color: context.mutedForegroundColor.withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No services available',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -143,9 +145,9 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
                             onTap: () => context.push('/explore/$serviceSlug'),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: context.cardColor,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: context.borderColor),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.03),
@@ -173,9 +175,10 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
                                   const SizedBox(height: 12),
                                   Text(
                                     serviceName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
+                                      color: context.foregroundColor,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/theme_extensions.dart';
 
 class BottomNav extends StatelessWidget {
   final int currentIndex;
@@ -15,10 +16,10 @@ class BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.backgroundColor,
         border: Border(
           top: BorderSide(
-            color: AppColors.border,
+            color: context.borderColor,
             width: 1,
           ),
         ),
@@ -116,7 +117,7 @@ class BottomNav extends StatelessWidget {
                   height: 24,
                   child: Icon(
                     isActive ? activeIcon : icon,
-                    color: isActive ? AppColors.primary : AppColors.mutedForeground,
+                    color: isActive ? AppColors.primary : context.mutedForegroundColor,
                     size: 24,
                   ),
                 ),
@@ -129,7 +130,7 @@ class BottomNav extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isActive ? AppColors.primary : AppColors.mutedForeground,
+                    color: isActive ? AppColors.primary : context.mutedForegroundColor,
                     fontSize: 11,
                     fontWeight: FontWeight.w600, // Same weight for both states
                     height: 1.2,

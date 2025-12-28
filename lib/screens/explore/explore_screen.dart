@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -81,7 +82,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -99,11 +100,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Explore !',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
+                                color: context.foregroundColor,
                               ),
                             ),
                             GestureDetector(
@@ -146,7 +148,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           padding: const EdgeInsets.all(32.0),
                           child: Text(
                             'No providers available for $_serviceName',
-                            style: TextStyle(color: AppColors.mutedForeground),
+                            style: TextStyle(color: context.mutedForegroundColor),
                           ),
                         ),
                       )
@@ -179,9 +181,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.borderColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
@@ -205,19 +207,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       placeholder: (context, url) => Container(
                         width: 48,
                         height: 48,
-                        color: AppColors.muted,
+                        color: context.mutedColor,
                       ),
                       errorWidget: (context, url, error) => Container(
                         width: 48,
                         height: 48,
-                        color: AppColors.muted,
+                        color: context.mutedColor,
                         child: const Icon(Iconsax.user),
                       ),
                     )
                   : Container(
                       width: 48,
                       height: 48,
-                      color: AppColors.muted,
+                      color: context.mutedColor,
                       child: const Icon(Iconsax.user),
                     ),
             ),
@@ -238,9 +240,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           children: [
                             Text(
                               providerName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
+                                color: context.foregroundColor,
                               ),
                             ),
                             if (serviceNames.isNotEmpty)
@@ -257,7 +260,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       IconButton(
                         icon: Icon(
                           Iconsax.add,
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                         ),
                         onPressed: () {},
                         padding: EdgeInsets.zero,
@@ -270,7 +273,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     Text(
                       provider['address'],
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 12,
                       ),
                       maxLines: 2,

@@ -5,7 +5,9 @@ import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
+import '../../services/theme_service.dart';
 import '../../widgets/app_header.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -159,7 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.backgroundColor,
         body: SafeArea(
           child: Column(
             children: [
@@ -183,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : null);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -196,11 +198,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Settings',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          color: context.foregroundColor,
                         ),
                       ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                       
@@ -224,10 +227,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 child: displayImage != null
                                     ? displayImage
                                     : Container(
-                                        color: AppColors.muted,
-                                        child: const Icon(
+                                        color: context.mutedColor,
+                                        child: Icon(
                                           Iconsax.user,
                                           size: 50,
+                                          color: context.mutedForegroundColor,
                                         ),
                                       ),
                               ),
@@ -331,9 +335,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.card,
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: context.borderColor),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,11 +345,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
+                                Text(
                                   'Change Password',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
+                                    color: context.foregroundColor,
                                   ),
                                 ),
                                 Switch(
@@ -422,6 +427,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ).animate(delay: 500.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                       
+                      const SizedBox(height: 24),
+                      
+                      // Theme Selection
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: context.cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.borderColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Iconsax.moon, color: AppColors.primary),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'App Theme',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: context.foregroundColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            ValueListenableBuilder<ThemeMode>(
+                              valueListenable: ThemeService.themeNotifier,
+                              builder: (context, currentTheme, child) {
+                                return Column(
+                                  children: [
+                                    _buildThemeOption(
+                                      context,
+                                      'Light',
+                                      ThemeMode.light,
+                                      currentTheme,
+                                      Iconsax.sun_1,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _buildThemeOption(
+                                      context,
+                                      'Dark',
+                                      ThemeMode.dark,
+                                      currentTheme,
+                                      Iconsax.moon,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _buildThemeOption(
+                                      context,
+                                      'System Default',
+                                      ThemeMode.system,
+                                      currentTheme,
+                                      Iconsax.setting_2,
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ).animate(delay: 550.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                      
                       const SizedBox(height: 32),
                       
                       // Save Button
@@ -460,6 +529,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(
+    BuildContext context,
+    String title,
+    ThemeMode themeMode,
+    ThemeMode currentTheme,
+    IconData icon,
+  ) {
+    final isSelected = currentTheme == themeMode;
+    return InkWell(
+      onTap: () async {
+        await ThemeService.setThemeMode(themeMode);
+        // Theme will update automatically via ValueNotifier
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? AppColors.primary.withOpacity(0.1) 
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? AppColors.primary 
+                : context.borderColor,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : context.mutedForegroundColor,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? AppColors.primary : context.foregroundColor,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Iconsax.tick_circle,
+                color: AppColors.primary,
+                size: 20,
+              ),
           ],
         ),
       ),

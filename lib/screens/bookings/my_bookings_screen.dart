@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -117,6 +118,68 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     return false;
   }
 
+  Future<void> _cancelBooking(Map<String, dynamic> booking) async {
+    final bookingId = booking['id'];
+    if (bookingId == null) return;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Booking'),
+        content: const Text('Are you sure you want to cancel this booking? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cancelling booking...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+
+    final result = await ApiService.cancelBooking(bookingId);
+    
+    if (mounted) {
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking cancelled successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        _loadData(); // Refresh the list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result['error']?['message'] ?? 'Failed to cancel booking',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _showReviewDialog(Map<String, dynamic> booking) async {
     final providerId = booking['provider']?['id'];
     
@@ -162,7 +225,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Provider: ${booking['provider_name'] ?? 'Provider'}',
-                  style: TextStyle(color: AppColors.mutedForeground),
+                  style: TextStyle(color: context.mutedForegroundColor),
                 ),
                 const SizedBox(height: 16),
                 const Text('Rating:'),
@@ -183,7 +246,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             : Iconsax.star,
                         color: selectedRating != null && rating <= selectedRating!
                             ? Colors.amber
-                            : AppColors.mutedForeground,
+                            : context.mutedForegroundColor,
                         size: 32,
                       ),
                     );
@@ -262,7 +325,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
       case 'cancelled':
         return AppColors.error;
       default:
-        return AppColors.mutedForeground;
+        return AppColors.primary; // Use primary color as fallback instead of muted
     }
   }
 
@@ -286,7 +349,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -310,7 +373,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                     Text(
                       'View all your service bookings',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 14,
                       ),
                     ).animate(delay: 100.ms).fadeIn(duration: 500.ms),
@@ -362,13 +425,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             Icon(
                               Iconsax.briefcase,
                               size: 80,
-                              color: AppColors.mutedForeground.withOpacity(0.5),
+                              color: context.mutedForegroundColor.withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No bookings yet',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -376,7 +439,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             Text(
                               'Your bookings will appear here',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 14,
                               ),
                             ),
@@ -448,9 +511,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,7 +536,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                     Text(
                       'Provider: $providerName',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 13,
                       ),
                     ),
@@ -503,7 +566,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: context.backgroundColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -511,13 +574,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Iconsax.document_text, size: 16, color: AppColors.mutedForeground),
+                    Icon(Iconsax.document_text, size: 16, color: context.mutedForegroundColor),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         description,
                         style: TextStyle(
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                           fontSize: 13,
                         ),
                         maxLines: 2,
@@ -529,13 +592,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Iconsax.location, size: 16, color: AppColors.mutedForeground),
+                    Icon(Iconsax.location, size: 16, color: context.mutedForegroundColor),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         address,
                         style: TextStyle(
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                           fontSize: 13,
                         ),
                         maxLines: 1,
@@ -548,12 +611,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Iconsax.calendar, size: 16, color: AppColors.mutedForeground),
+                      Icon(Iconsax.calendar, size: 16, color: context.mutedForegroundColor),
                       const SizedBox(width: 8),
                       Text(
                         'Scheduled: $scheduledDateStr',
                         style: TextStyle(
-                          color: AppColors.mutedForeground,
+                          color: context.mutedForegroundColor,
                           fontSize: 13,
                         ),
                       ),
@@ -563,12 +626,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Iconsax.card, size: 16, color: AppColors.mutedForeground),
+                    Icon(Iconsax.card, size: 16, color: context.mutedForegroundColor),
                     const SizedBox(width: 8),
                     Text(
                       price,
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 13,
                       ),
                     ),
@@ -594,11 +657,29 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
             ),
           ),
           
-          // Review button for completed bookings
-          if (status == 'completed') ...[
-            const SizedBox(height: 12),
-            Builder(
-              builder: (context) {
+          // Action buttons
+          const SizedBox(height: 12),
+          Builder(
+            builder: (context) {
+              // Cancel button for non-completed, non-cancelled bookings
+              if (status != 'completed' && status != 'cancelled') {
+                return SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _cancelBooking(booking),
+                    icon: const Icon(Iconsax.close_circle),
+                    label: const Text('Cancel Booking'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                );
+              }
+              
+              // Review button for completed bookings
+              if (status == 'completed') {
                 final providerId = booking['provider']?['id'];
                 // Extract service category ID again for this builder
                 dynamic serviceCategoryIdRaw;
@@ -650,9 +731,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           ),
                         ),
                 );
-              },
-            ),
-          ],
+              }
+              
+              return const SizedBox.shrink();
+            },
+          ),
         ],
       ),
     ).animate(delay: Duration(milliseconds: index * 100)).fadeIn(duration: 400.ms).moveX(begin: 20, end: 0);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/theme_extensions.dart';
 import '../services/api_service.dart';
 
 class AppHeader extends StatefulWidget {
@@ -143,7 +144,7 @@ class _AppHeaderState extends State<AppHeader> {
                 Text(
                   'Service Address',
                   style: TextStyle(
-                    color: AppColors.mutedForeground,
+                    color: context.mutedForegroundColor,
                     fontSize: 10,
                   ),
                 ),

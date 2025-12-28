@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../models/user.dart';
 import '../../widgets/app_header.dart';
 import '../../services/api_service.dart';
+import '../../services/theme_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -80,6 +82,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         route: '/settings',
       ),
       _MenuItem(
+        icon: Iconsax.moon,
+        label: 'Theme',
+        description: 'Change app theme (Light/Dark)',
+        route: '',
+        isThemeToggle: true,
+      ),
+      _MenuItem(
         icon: Iconsax.logout,
         label: 'Logout',
         description: 'Sign out from your account',
@@ -89,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -139,19 +148,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   placeholder: (context, url) => Container(
                                     width: 80,
                                     height: 80,
-                                    color: AppColors.muted,
+                                    color: context.mutedColor,
                                   ),
                                   errorWidget: (context, url, error) => Container(
                                     width: 80,
                                     height: 80,
-                                    color: AppColors.muted,
+                                    color: context.mutedColor,
                                     child: const Icon(Iconsax.user),
                                   ),
                                 )
                               : Container(
                                   width: 80,
                                   height: 80,
-                                  color: AppColors.muted,
+                                  color: context.mutedColor,
                                   child: const Icon(Iconsax.user, size: 40),
                                 ),
                         ),
@@ -176,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Text(
                           userEmail,
                           style: TextStyle(
-                            color: AppColors.mutedForeground,
+                            color: context.mutedForegroundColor,
                             fontSize: 14,
                           ),
                         ).animate(delay: 250.ms).fadeIn(duration: 500.ms),
@@ -187,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Text(
                           '📞 $userPhone',
                           style: TextStyle(
-                            color: AppColors.mutedForeground,
+                            color: context.mutedForegroundColor,
                             fontSize: 14,
                           ),
                         ).animate(delay: 250.ms).fadeIn(duration: 500.ms),
@@ -215,6 +224,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMenuItem(BuildContext context, _MenuItem item, int index) {
     return GestureDetector(
       onTap: () async {
+        if (item.isThemeToggle) {
+          // Show theme selection dialog
+          final currentTheme = await ThemeService.getThemeMode();
+          final selectedTheme = await showDialog<ThemeMode>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Select Theme'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: Icon(
+                      Iconsax.sun_1,
+                      color: currentTheme == ThemeMode.light 
+                          ? AppColors.primary 
+                          : null,
+                    ),
+                    title: const Text('Light'),
+                    trailing: currentTheme == ThemeMode.light
+                        ? Icon(Iconsax.tick_circle, color: AppColors.primary)
+                        : null,
+                    onTap: () => Navigator.pop(context, ThemeMode.light),
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Iconsax.moon,
+                      color: currentTheme == ThemeMode.dark 
+                          ? AppColors.primary 
+                          : null,
+                    ),
+                    title: const Text('Dark'),
+                    trailing: currentTheme == ThemeMode.dark
+                        ? Icon(Iconsax.tick_circle, color: AppColors.primary)
+                        : null,
+                    onTap: () => Navigator.pop(context, ThemeMode.dark),
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Iconsax.setting_2,
+                      color: currentTheme == ThemeMode.system 
+                          ? AppColors.primary 
+                          : null,
+                    ),
+                    title: const Text('System Default'),
+                    trailing: currentTheme == ThemeMode.system
+                        ? Icon(Iconsax.tick_circle, color: AppColors.primary)
+                        : null,
+                    onTap: () => Navigator.pop(context, ThemeMode.system),
+                  ),
+                ],
+              ),
+            ),
+          );
+          
+          if (selectedTheme != null) {
+            await ThemeService.setThemeMode(selectedTheme);
+          }
+          return;
+        }
+        
         if (item.isLogout) {
           // Show confirmation dialog
           final shouldLogout = await showDialog<bool>(
@@ -252,9 +321,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.borderColor),
         ),
         child: Row(
           children: [
@@ -285,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     item.description,
                     style: TextStyle(
-                      color: AppColors.mutedForeground,
+                      color: context.mutedForegroundColor,
                       fontSize: 12,
                     ),
                   ),
@@ -294,7 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             Icon(
               Iconsax.arrow_right_3,
-              color: AppColors.mutedForeground,
+              color: context.mutedForegroundColor,
               size: 20,
             ),
           ],
@@ -310,6 +379,7 @@ class _MenuItem {
   final String description;
   final String route;
   final bool isLogout;
+  final bool isThemeToggle;
 
   const _MenuItem({
     required this.icon,
@@ -317,6 +387,7 @@ class _MenuItem {
     required this.description,
     required this.route,
     this.isLogout = false,
+    this.isThemeToggle = false,
   });
 }
 

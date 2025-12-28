@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 
 class ProviderDetailScreen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     // Show loading state
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.backgroundColor,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Iconsax.arrow_left),
@@ -95,7 +96,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     // Show error state - DO NOT show any mock data
     if (_error != null || _providerData == null) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.backgroundColor,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Iconsax.arrow_left),
@@ -114,9 +115,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
               const SizedBox(height: 16),
               Text(
                 _error ?? 'Provider not found',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
+                  color: context.foregroundColor,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -149,13 +151,13 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     final contact = provider['contact'] ?? '';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left),
           onPressed: () => context.pop(),
         ),
-        backgroundColor: AppColors.background,
+        backgroundColor: context.backgroundColor,
         elevation: 0,
         title: Row(
           children: [
@@ -180,7 +182,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   Text(
                     'Service Address',
                     style: TextStyle(
-                      color: AppColors.mutedForeground,
+                      color: context.mutedForegroundColor,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
@@ -188,9 +190,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   const SizedBox(height: 2),
                   Text(
                     locationString.isNotEmpty ? locationString : (address.isNotEmpty ? address : 'Location not specified'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
+                      color: context.foregroundColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -202,7 +205,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
             IconButton(
               icon: Icon(
                 Iconsax.message_question,
-                color: AppColors.mutedForeground,
+                color: context.mutedForegroundColor,
                 size: 22,
               ),
               onPressed: () {},
@@ -225,9 +228,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.card,
+                        color: context.cardColor,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: context.borderColor),
                       ),
                       child: Column(
                         children: [
@@ -252,19 +255,19 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                       placeholder: (context, url) => Container(
                                         width: 96,
                                         height: 96,
-                                        color: AppColors.muted,
+                                        color: context.mutedColor,
                                       ),
                                       errorWidget: (context, url, error) => Container(
                                         width: 96,
                                         height: 96,
-                                        color: AppColors.muted,
+                                        color: context.mutedColor,
                                         child: const Icon(Iconsax.user, size: 48),
                                       ),
                                     )
                                   : Container(
                                       width: 96,
                                       height: 96,
-                                      color: AppColors.muted,
+                                      color: context.mutedColor,
                                       child: const Icon(Iconsax.user, size: 48),
                                     ),
                             ),
@@ -275,9 +278,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                           // Name
                           Text(
                             providerName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
+                              color: context.foregroundColor,
                             ),
                           ),
                           
@@ -310,7 +314,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                 Text(
                                   averageRating.toStringAsFixed(1),
                                   style: TextStyle(
-                                    color: AppColors.mutedForeground,
+                                    color: context.mutedForegroundColor,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -318,7 +322,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                 Text(
                                   '·',
                                   style: TextStyle(
-                                    color: AppColors.mutedForeground,
+                                    color: context.mutedForegroundColor,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -326,7 +330,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                 Text(
                                   '$totalReviews ${totalReviews == 1 ? 'review' : 'reviews'}',
                                   style: TextStyle(
-                                    color: AppColors.mutedForeground,
+                                    color: context.mutedForegroundColor,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -458,11 +462,12 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Reviews',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
+                              color: context.foregroundColor,
                             ),
                           ),
                           TextButton(
@@ -484,9 +489,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.card,
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,8 +501,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                 children: [
                                   Text(
                                     review['customer_name'] ?? 'Anonymous',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
+                                      color: context.foregroundColor,
                                     ),
                                   ),
                                   Row(
@@ -507,7 +513,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                         Icons.star,
                                         color: i < (review['rating'] as int? ?? 0)
                                             ? AppColors.amber
-                                            : AppColors.muted,
+                                            : context.mutedColor,
                                         size: 16,
                                       ),
                                     ),
@@ -519,7 +525,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                 Text(
                                   review['comment'],
                                   style: TextStyle(
-                                    color: AppColors.mutedForeground,
+                                    color: context.mutedForegroundColor,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -547,9 +553,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Row(
         children: [
@@ -565,14 +571,15 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
               Text(
                 title,
                 style: TextStyle(
-                  color: AppColors.mutedForeground,
+                  color: context.mutedForegroundColor,
                   fontSize: 12,
                 ),
               ),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
+                  color: context.foregroundColor,
                 ),
               ),
             ],
