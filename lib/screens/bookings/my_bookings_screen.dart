@@ -1,0 +1,661 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../widgets/app_header.dart';
+
+class MyBookingsScreen extends StatefulWidget {
+  const MyBookingsScreen({super.key});
+
+  @override
+  State<MyBookingsScreen> createState() => _MyBookingsScreenState();
+}
+
+class _MyBookingsScreenState extends State<MyBookingsScreen> {
+  List<dynamic> _bookings = [];
+  List<dynamic> _reviews = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    // Load bookings and reviews in parallel
+    final bookingsResult = await ApiService.getUserBookings();
+    final reviewsResult = await ApiService.getReviews();
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        if (bookingsResult['success'] == true) {
+          _bookings = bookingsResult['data'] as List;
+        }
+        if (reviewsResult['success'] == true) {
+          _reviews = reviewsResult['data'] as List;
+        }
+        if (bookingsResult['success'] != true) {
+          _error = bookingsResult['error']?['message'] ?? 'Failed to load bookings';
+        }
+      });
+    }
+  }
+
+  bool _hasReviewed(int providerId, int? serviceCategoryId) {
+    if (_reviews.isEmpty) {
+      return false;
+    }
+    
+    print('🔍 Checking review for Provider: $providerId, Service: $serviceCategoryId');
+    print('📋 Total reviews: ${_reviews.length}');
+    
+    for (var review in _reviews) {
+      // Extract provider ID - handle both object and ID formats
+      dynamic reviewProviderId;
+      if (review['provider'] is Map) {
+        reviewProviderId = review['provider']?['id'];
+      } else {
+        reviewProviderId = review['provider'];
+      }
+      
+      // Extract service category ID - handle both object and ID formats
+      dynamic reviewServiceCategoryId;
+      if (review['service_category'] != null) {
+        if (review['service_category'] is Map) {
+          reviewServiceCategoryId = review['service_category']?['id'];
+        } else {
+          reviewServiceCategoryId = review['service_category'];
+        }
+      } else {
+        reviewServiceCategoryId = null;
+      }
+      
+      // Convert to int for comparison
+      final reviewProviderIdInt = reviewProviderId is int ? reviewProviderId : int.tryParse(reviewProviderId.toString());
+      final reviewServiceCategoryIdInt = reviewServiceCategoryId == null 
+          ? null 
+          : (reviewServiceCategoryId is int ? reviewServiceCategoryId : int.tryParse(reviewServiceCategoryId.toString()));
+      
+      print('  Review - Provider: $reviewProviderIdInt, Service: $reviewServiceCategoryIdInt');
+      
+      // Provider must match exactly
+      if (reviewProviderIdInt != providerId) {
+        continue; // Skip this review, provider doesn't match
+      }
+      
+      // Service category must match exactly
+      // Both null = match
+      // Both same ID = match
+      // Otherwise = no match
+      bool serviceMatches = false;
+      if (serviceCategoryId == null && reviewServiceCategoryIdInt == null) {
+        serviceMatches = true;
+      } else if (serviceCategoryId != null && reviewServiceCategoryIdInt != null) {
+        serviceMatches = serviceCategoryId == reviewServiceCategoryIdInt;
+      }
+      
+      if (serviceMatches) {
+        print('  ✅ MATCH FOUND!');
+        return true;
+      } else {
+        print('  ❌ Service category mismatch');
+      }
+    }
+    
+    print('  ❌ No match found');
+    return false;
+  }
+
+  Future<void> _showReviewDialog(Map<String, dynamic> booking) async {
+    final providerId = booking['provider']?['id'];
+    
+    // Extract service category ID properly
+    dynamic serviceCategoryIdRaw;
+    if (booking['service_category'] is Map) {
+      serviceCategoryIdRaw = booking['service_category']?['id'];
+    } else {
+      serviceCategoryIdRaw = booking['service_category'];
+    }
+    final serviceCategoryId = serviceCategoryIdRaw is int 
+        ? serviceCategoryIdRaw 
+        : (serviceCategoryIdRaw != null ? int.tryParse(serviceCategoryIdRaw.toString()) : null);
+    
+    print('💬 Review dialog - Provider: $providerId, Service: $serviceCategoryId');
+    
+    if (providerId == null) return;
+
+    // Check if already reviewed
+    if (_hasReviewed(providerId, serviceCategoryId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have already reviewed this service')),
+      );
+      return;
+    }
+
+    int? selectedRating;
+    final commentController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Write a Review'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Service: ${booking['service_name'] ?? 'Service'}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Provider: ${booking['provider_name'] ?? 'Provider'}',
+                  style: TextStyle(color: AppColors.mutedForeground),
+                ),
+                const SizedBox(height: 16),
+                const Text('Rating:'),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    final rating = index + 1;
+                    return IconButton(
+                      onPressed: () {
+                        setDialogState(() {
+                          selectedRating = rating;
+                        });
+                      },
+                      icon: Icon(
+                        selectedRating != null && rating <= selectedRating!
+                            ? Iconsax.star1
+                            : Iconsax.star,
+                        color: selectedRating != null && rating <= selectedRating!
+                            ? Colors.amber
+                            : AppColors.mutedForeground,
+                        size: 32,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: commentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Comment (Optional)',
+                    hintText: 'Share your experience...',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 4,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: selectedRating == null
+                  ? null
+                  : () async {
+                      final reviewData = {
+                        'provider_id': providerId,
+                        'service_category_id': serviceCategoryId,
+                        'rating': selectedRating,
+                        'comment': commentController.text.trim(),
+                      };
+
+                      final result = await ApiService.createReview(reviewData);
+                      if (mounted) {
+                        Navigator.pop(context);
+                        if (result['success'] == true) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Review submitted successfully')),
+                          );
+                          _loadData();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                result['error']?['message'] ?? 'Failed to submit review',
+                              ),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return AppColors.warning;
+      case 'accepted':
+        return AppColors.primary;
+      case 'in_progress':
+        return AppColors.suvidhaCyan;
+      case 'completed':
+        return AppColors.success;
+      case 'cancelled':
+        return AppColors.error;
+      default:
+        return AppColors.mutedForeground;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'accepted':
+        return 'Accepted';
+      case 'in_progress':
+        return 'In Progress';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'My Bookings',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                    
+                    const SizedBox(height: 8),
+                    
+                    Text(
+                      'View all your service bookings',
+                      style: TextStyle(
+                        color: AppColors.mutedForeground,
+                        fontSize: 14,
+                      ),
+                    ).animate(delay: 100.ms).fadeIn(duration: 500.ms),
+                    
+                    const SizedBox(height: 20),
+                    
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_error != null)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Iconsax.warning_2,
+                                size: 64,
+                                color: AppColors.error,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _error!,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: _loadData,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (_bookings.isEmpty)
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 60),
+                            Icon(
+                              Iconsax.briefcase,
+                              size: 80,
+                              color: AppColors.mutedForeground.withOpacity(0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No bookings yet',
+                              style: TextStyle(
+                                color: AppColors.mutedForeground,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Your bookings will appear here',
+                              style: TextStyle(
+                                color: AppColors.mutedForeground,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ..._bookings.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final booking = entry.value;
+                        return _buildBookingCard(booking, index);
+                      }),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookingCard(Map<String, dynamic> booking, int index) {
+    final status = booking['status'] ?? 'pending';
+    final statusColor = _getStatusColor(status);
+    final statusText = _getStatusText(status);
+    
+    // Extract service category ID properly
+    dynamic serviceCategoryIdRaw;
+    if (booking['service_category'] is Map) {
+      serviceCategoryIdRaw = booking['service_category']?['id'];
+    } else {
+      serviceCategoryIdRaw = booking['service_category'];
+    }
+    final serviceCategoryId = serviceCategoryIdRaw is int 
+        ? serviceCategoryIdRaw 
+        : (serviceCategoryIdRaw != null ? int.tryParse(serviceCategoryIdRaw.toString()) : null);
+    
+    print('📦 Booking $index - Service Category ID: $serviceCategoryId');
+    print('   Booking data: ${booking['service_category']}');
+    
+    final providerName = booking['provider_name'] ?? booking['provider']?['name'] ?? 'Unknown Provider';
+    final serviceName = booking['service_name'] ?? booking['service_category']?['name'] ?? 'Unknown Service';
+    final description = booking['description'] ?? 'No description';
+    final address = booking['address'] ?? 'Address not specified';
+    final price = booking['price'] != null ? 'Rs. ${booking['price']}/-' : 'Price not specified';
+    
+    String? scheduledDateStr;
+    if (booking['scheduled_date'] != null) {
+      try {
+        final date = DateTime.parse(booking['scheduled_date']);
+        scheduledDateStr = DateFormat('MMM d, yyyy hh:mm a').format(date);
+      } catch (e) {
+        scheduledDateStr = booking['scheduled_date'];
+      }
+    }
+    
+    String? createdDateStr;
+    if (booking['created_at'] != null) {
+      try {
+        final date = DateTime.parse(booking['created_at']);
+        createdDateStr = DateFormat('MMM d, yyyy').format(date);
+      } catch (e) {
+        createdDateStr = booking['created_at'];
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      serviceName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Provider: $providerName',
+                      style: TextStyle(
+                        color: AppColors.mutedForeground,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Iconsax.document_text, size: 16, color: AppColors.mutedForeground),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        description,
+                        style: TextStyle(
+                          color: AppColors.mutedForeground,
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Iconsax.location, size: 16, color: AppColors.mutedForeground),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        address,
+                        style: TextStyle(
+                          color: AppColors.mutedForeground,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (scheduledDateStr != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Iconsax.calendar, size: 16, color: AppColors.mutedForeground),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Scheduled: $scheduledDateStr',
+                        style: TextStyle(
+                          color: AppColors.mutedForeground,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Iconsax.card, size: 16, color: AppColors.mutedForeground),
+                    const SizedBox(width: 8),
+                    Text(
+                      price,
+                      style: TextStyle(
+                        color: AppColors.mutedForeground,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                if (createdDateStr != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Iconsax.clock, size: 16, color: AppColors.mutedForeground),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Booked on: $createdDateStr',
+                        style: TextStyle(
+                          color: AppColors.mutedForeground,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          
+          // Review button for completed bookings
+          if (status == 'completed') ...[
+            const SizedBox(height: 12),
+            Builder(
+              builder: (context) {
+                final providerId = booking['provider']?['id'];
+                // Extract service category ID again for this builder
+                dynamic serviceCategoryIdRaw;
+                if (booking['service_category'] is Map) {
+                  serviceCategoryIdRaw = booking['service_category']?['id'];
+                } else {
+                  serviceCategoryIdRaw = booking['service_category'];
+                }
+                final serviceCategoryIdForReview = serviceCategoryIdRaw is int 
+                    ? serviceCategoryIdRaw 
+                    : (serviceCategoryIdRaw != null ? int.tryParse(serviceCategoryIdRaw.toString()) : null);
+                
+                final hasReviewed = providerId != null && 
+                                   _hasReviewed(providerId, serviceCategoryIdForReview);
+                
+                return SizedBox(
+                  width: double.infinity,
+                  child: hasReviewed
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.success),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Iconsax.tick_circle, color: AppColors.success, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Reviewed',
+                                style: TextStyle(
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : OutlinedButton.icon(
+                          onPressed: () => _showReviewDialog(booking),
+                          icon: const Icon(Iconsax.star),
+                          label: const Text('Write Review'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    ).animate(delay: Duration(milliseconds: index * 100)).fadeIn(duration: 400.ms).moveX(begin: 20, end: 0);
+  }
+}
+

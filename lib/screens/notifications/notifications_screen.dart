@@ -1,0 +1,254 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../widgets/app_header.dart';
+
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  List<dynamic> _notifications = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
+    final result = await ApiService.getNotifications();
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (result['success'] == true) {
+        setState(() {
+          _notifications = result['data'] as List;
+        });
+      }
+    }
+  }
+
+  String _formatTime(String? dateTimeString) {
+    if (dateTimeString == null) return '';
+    try {
+      final dateTime = DateTime.parse(dateTimeString);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+      
+      if (difference.inMinutes < 60) {
+        return '${difference.inMinutes} minutes ago';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours} hours ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else {
+        return DateFormat('MMM d, y').format(dateTime);
+      }
+    } catch (e) {
+      return '';
+    }
+  }
+
+  IconData _getIcon(String? type) {
+    switch (type) {
+      case 'booking_created':
+        return Iconsax.document;
+      case 'booking_confirmed':
+      case 'booking_accepted':
+        return Iconsax.tick_circle;
+      case 'booking_completed':
+      case 'service_completed':
+        return Iconsax.star;
+      case 'payment_received':
+        return Iconsax.card;
+      case 'new_provider':
+        return Iconsax.notification;
+      case 'verification_approved':
+        return Iconsax.tick_circle;
+      case 'verification_rejected':
+        return Iconsax.close_circle;
+      default:
+        return Iconsax.notification;
+    }
+  }
+
+  Color _getIconColor(String? type) {
+    switch (type) {
+      case 'booking_created':
+        return AppColors.primary;
+      case 'booking_confirmed':
+      case 'booking_accepted':
+      case 'verification_approved':
+        return AppColors.success;
+      case 'booking_completed':
+      case 'service_completed':
+        return AppColors.amber;
+      case 'payment_received':
+        return AppColors.primary;
+      case 'new_provider':
+        return AppColors.accent;
+      case 'verification_rejected':
+        return AppColors.error;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Notifications',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                    
+                    const SizedBox(height: 20),
+                    
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_notifications.isEmpty)
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 60),
+                            Icon(
+                              Iconsax.notification,
+                              size: 80,
+                              color: AppColors.mutedForeground.withOpacity(0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No notifications yet',
+                              style: TextStyle(
+                                color: AppColors.mutedForeground,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ..._notifications.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final notification = entry.value;
+                        return _buildNotificationCard(notification, index);
+                      }),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(dynamic notification, int index) {
+    final title = notification['title'] ?? '';
+    final message = notification['message'] ?? '';
+    final time = _formatTime(notification['created_at']);
+    final type = notification['notification_type'] ?? 'general';
+    final icon = _getIcon(type);
+    final iconColor = _getIconColor(type);
+    final isRead = notification['is_read'] ?? false;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isRead ? AppColors.card : AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isRead ? AppColors.border : AppColors.primary.withOpacity(0.3),
+          width: isRead ? 1 : 1.5,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: isRead ? FontWeight.w500 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      time,
+                      style: TextStyle(
+                        color: AppColors.mutedForeground,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: AppColors.mutedForeground,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate(delay: Duration(milliseconds: index * 100)).fadeIn(duration: 400.ms).moveX(begin: 20, end: 0);
+  }
+}
+
+

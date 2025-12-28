@@ -1,0 +1,323 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/theme/app_colors.dart';
+import '../../models/user.dart';
+import '../../widgets/app_header.dart';
+import '../../services/api_service.dart';
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Map<String, dynamic>? _userData;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() => _isLoading = true);
+    final result = await ApiService.getCurrentUserInfo();
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (result['success'] == true) {
+        setState(() {
+          _userData = result['data'];
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userName = _userData?['username'] ?? 'User';
+    final userEmail = _userData?['email'] ?? '';
+    final userPhone = _userData?['phone'] ?? '';
+    final profilePhoto = _userData?['profile_photo'];
+    final userRole = _userData?['role'] ?? 'customer';
+
+    final menuItems = <_MenuItem>[
+      if (userRole == 'provider')
+        _MenuItem(
+          icon: Iconsax.document,
+          label: 'Service Requests',
+          description: 'View and manage service requests',
+          route: '/requests',
+        ),
+      _MenuItem(
+        icon: Iconsax.briefcase,
+        label: 'My Bookings',
+        description: 'View your service bookings',
+        route: '/my-bookings',
+      ),
+      _MenuItem(
+        icon: Iconsax.location,
+        label: 'Saved Addresses',
+        description: 'Manage your saved addresses',
+        route: '/addresses',
+      ),
+      _MenuItem(
+        icon: Iconsax.star,
+        label: 'Reviews',
+        description: 'Reviews for 5 items',
+        route: '/reviews',
+      ),
+      _MenuItem(
+        icon: Iconsax.setting,
+        label: 'Setting',
+        description: 'Notification, Password, FAQ, Contact',
+        route: '/settings',
+      ),
+      _MenuItem(
+        icon: Iconsax.logout,
+        label: 'Logout',
+        description: 'Sign out from your account',
+        route: '',
+        isLogout: true,
+      ),
+    ];
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Profile Header
+                    const Text(
+                      'Profile',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                    
+                    const SizedBox(height: 20),
+                    
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else ...[
+                      // Profile Image
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.2),
+                            width: 4,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(40),
+                          child: profilePhoto != null
+                              ? CachedNetworkImage(
+                                  imageUrl: profilePhoto,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: AppColors.muted,
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: AppColors.muted,
+                                    child: const Icon(Iconsax.user),
+                                  ),
+                                )
+                              : Container(
+                                  width: 80,
+                                  height: 80,
+                                  color: AppColors.muted,
+                                  child: const Icon(Iconsax.user, size: 40),
+                                ),
+                        ),
+                      ).animate(delay: 100.ms).fadeIn(duration: 500.ms).scale(
+                        begin: const Offset(0.8, 0.8),
+                        end: const Offset(1, 1),
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Name
+                      Text(
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ).animate(delay: 200.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                      
+                      if (userEmail.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          userEmail,
+                          style: TextStyle(
+                            color: AppColors.mutedForeground,
+                            fontSize: 14,
+                          ),
+                        ).animate(delay: 250.ms).fadeIn(duration: 500.ms),
+                      ],
+                      
+                      if (userPhone.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '📞 $userPhone',
+                          style: TextStyle(
+                            color: AppColors.mutedForeground,
+                            fontSize: 14,
+                          ),
+                        ).animate(delay: 250.ms).fadeIn(duration: 500.ms),
+                      ],
+                    ],
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Menu Items
+                    ...menuItems.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final item = entry.value;
+                      return _buildMenuItem(context, item, index);
+                    }),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(BuildContext context, _MenuItem item, int index) {
+    return GestureDetector(
+      onTap: () async {
+        if (item.isLogout) {
+          // Show confirmation dialog
+          final shouldLogout = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Logout'),
+              content: const Text('Are you sure you want to logout?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red,
+                  ),
+                  child: const Text('Logout'),
+                ),
+              ],
+            ),
+          );
+          
+          if (shouldLogout == true) {
+            await ApiService.logout();
+            if (context.mounted) {
+              context.go('/role-select');
+            }
+          }
+        } else if (item.route.isNotEmpty) {
+          context.push(item.route);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Icon(
+                item.icon,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    item.description,
+                    style: TextStyle(
+                      color: AppColors.mutedForeground,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Iconsax.arrow_right_3,
+              color: AppColors.mutedForeground,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    ).animate(delay: Duration(milliseconds: 300 + index * 50)).fadeIn(duration: 400.ms).moveX(begin: 20, end: 0);
+  }
+}
+
+class _MenuItem {
+  final IconData icon;
+  final String label;
+  final String description;
+  final String route;
+  final bool isLogout;
+
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.description,
+    required this.route,
+    this.isLogout = false,
+  });
+}
+
+
