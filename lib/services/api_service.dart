@@ -6,10 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Update this based on your environment:
+  // Production: https://suvidhaconnect.pythonanywhere.com/api
   // Android Emulator: http://10.0.2.2:8000/api
   // iOS Simulator: http://localhost:8000/api
   // Physical Device: http://YOUR_COMPUTER_IP:8000/api (e.g., http://192.168.1.100:8000/api)
-  static const String baseUrl = 'http://192.168.1.15:8000/api'; // Android emulator
+  static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
+  // static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
   
   // Test connection
   static Future<bool> testConnection() async {
