@@ -10,8 +10,8 @@ class ApiService {
   // Android Emulator: http://10.0.2.2:8000/api
   // iOS Simulator: http://localhost:8000/api
   // Physical Device: http://YOUR_COMPUTER_IP:8000/api (e.g., http://192.168.1.100:8000/api)
-  // static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
-  static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
+  static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
+  // static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
   
   // Test connection
   static Future<bool> testConnection() async {
@@ -95,7 +95,8 @@ class ApiService {
   
   // Authentication
   static Future<Map<String, dynamic>> register({
-    required String username,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
     required String phone,
@@ -111,14 +112,15 @@ class ApiService {
         role = 'customer';
       }
       
-      print('Registering user: $username');
+      print('Registering user: $firstName $lastName');
       print('Register URL: $baseUrl/auth/users/register/');
       print('Role being sent: $role');
       final response = await http.post(
         Uri.parse('$baseUrl/auth/users/register/'),
         headers: await _getHeaders(),
         body: jsonEncode({
-          'username': username,
+          'first_name': firstName,
+          'last_name': lastName,
           'email': email,
           'password': password,
           'password2': password,
@@ -135,7 +137,8 @@ class ApiService {
       print('Register response status: ${response.statusCode}');
       print('Register response body: ${response.body}');
       print('Register request body: ${jsonEncode({
-        'username': username,
+        'first_name': firstName,
+        'last_name': lastName,
         'email': email,
         'password': '***',
         'password2': '***',
@@ -229,17 +232,21 @@ class ApiService {
           final responseData = jsonDecode(response.body);
           print('Login successful - User data: $responseData');
           
+          // Backend returns user data directly (UserSerializer output)
           // Save user data to SharedPreferences for quick access
-          if (responseData['user'] != null) {
-            await prefs.setString('user_data', jsonEncode(responseData['user']));
-            await prefs.setBool('is_logged_in', true);
-            print('✅ User data saved to SharedPreferences');
-            print('✅ Login state saved: is_logged_in = true');
-          }
+          await prefs.setString('user_data', jsonEncode(responseData));
+          await prefs.setBool('is_logged_in', true);
+          print('✅ User data saved to SharedPreferences');
+          print('✅ Login state saved: is_logged_in = true');
           
           return {'success': true, 'data': responseData};
         } catch (e) {
           print('Failed to parse success response: $e');
+          // Even on parse error, if we have a session, mark as logged in
+          if (savedSessionId != null && savedSessionId.isNotEmpty) {
+            await prefs.setBool('is_logged_in', true);
+            print('✅ Login state saved: is_logged_in = true (session exists, parse error)');
+          }
           return {'success': true, 'data': {'message': 'Login successful'}};
         }
       } else if (response.statusCode == 403) {
@@ -614,6 +621,43 @@ class ApiService {
     }
   }
 
+  // Get provider profile
+  static Future<Map<String, dynamic>> getProviderProfile() async {
+    try {
+      print('Fetching provider profile');
+      final response = await http.get(
+        Uri.parse('$baseUrl/providers/my_profile/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      print('Provider profile response: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } on TimeoutException catch (e) {
+      print('Get provider profile timeout: $e');
+      return {'success': false, 'error': {'message': 'Request timed out. Please check your connection.'}};
+    } on SocketException catch (e) {
+      print('Get provider profile network error: $e');
+      return {'success': false, 'error': {'message': 'Network error. Please check your internet connection.'}};
+    } catch (e) {
+      print('Get provider profile error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
   // Check if user is logged in by verifying session
   static Future<bool> isLoggedIn() async {
     try {
@@ -628,49 +672,60 @@ class ApiService {
         print('   session_id (first 20 chars): ${sessionId.substring(0, sessionId.length > 20 ? 20 : sessionId.length)}...');
       }
       
-      if (!isLoggedInFlag || sessionId == null || sessionId.isEmpty) {
-        print('❌ Not logged in: missing flag or session ID');
-        return false;
-      }
-      
-      // Verify session is still valid by calling /me endpoint
-      print('🔍 Verifying session with server...');
-      final response = await http.get(
-        Uri.parse('$baseUrl/auth/users/me/'),
-        headers: await _getHeaders(includeAuth: true),
-      ).timeout(const Duration(seconds: 10));
-      
-      print('   Response status: ${response.statusCode}');
-      
-      if (response.statusCode == 200) {
-        // Session is valid, update user data
+      // If we have both flag and session ID, trust it (don't require network verification on every app start)
+      if (isLoggedInFlag && sessionId != null && sessionId.isNotEmpty) {
+        print('✅ Session exists locally, assuming logged in');
+        
+        // Try to verify in background, but don't block on it
         try {
-          final userData = jsonDecode(response.body);
-          await prefs.setString('user_data', jsonEncode(userData));
-          print('✅ Session is valid, user data updated');
-          return true;
+          print('🔍 Verifying session with server (non-blocking)...');
+          final response = await http.get(
+            Uri.parse('$baseUrl/auth/users/me/'),
+            headers: await _getHeaders(includeAuth: true),
+          ).timeout(const Duration(seconds: 5));
+          
+          print('   Response status: ${response.statusCode}');
+          
+          if (response.statusCode == 200) {
+            // Session is valid, update user data
+            try {
+              final userData = jsonDecode(response.body);
+              await prefs.setString('user_data', jsonEncode(userData));
+              print('✅ Session verified, user data updated');
+            } catch (e) {
+              print('⚠️ Failed to parse user data: $e');
+            }
+          } else if (response.statusCode == 401 || response.statusCode == 403) {
+            // Only clear session on definitive auth errors (401/403)
+            print('❌ Session invalid (status: ${response.statusCode}), clearing session');
+            await _clearSession();
+            return false;
+          } else {
+            // Other errors (500, 404, etc.) - don't clear session, might be server issue
+            print('⚠️ Server error (status: ${response.statusCode}), keeping session');
+          }
         } catch (e) {
-          print('⚠️ Failed to parse user data: $e');
-          return true; // Session is valid even if parsing fails
+          // Network errors, timeouts, etc. - don't clear session
+          print('⚠️ Session verification failed (network/timeout), keeping session: $e');
+          print('   User can still use app - session will be verified on next API call');
         }
-      } else {
-        // Session expired or invalid
-        print('❌ Session invalid or expired (status: ${response.statusCode})');
-        print('   Response body: ${response.body}');
-        await _clearSession();
-        return false;
+        
+        return true;
       }
+      
+      print('❌ Not logged in: missing flag or session ID');
+      return false;
     } catch (e) {
       print('❌ Session check error: $e');
-      // On network errors, still check if we have a session ID
-      // Don't clear session on network errors, only on auth errors
+      // On unexpected errors, check if we have a session
       final prefs = await SharedPreferences.getInstance();
       final sessionId = prefs.getString('session_id');
       final isLoggedInFlag = prefs.getBool('is_logged_in') ?? false;
       if (sessionId != null && sessionId.isNotEmpty && isLoggedInFlag) {
-        print('⚠️ Network error but session exists, assuming logged in');
+        print('⚠️ Error but session exists, assuming logged in');
         return true;
       }
+      print('❌ No session found, user not logged in');
       return false;
     }
   }
@@ -1202,6 +1257,27 @@ class ApiService {
   }
   
   // Accept a booking request
+  static Future<Map<String, dynamic>> startNegotiation(int bookingId) async {
+    try {
+      final headers = await _getHeaders(includeAuth: true);
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/start_negotiation/'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 30));
+
+      final responseData = json.decode(response.body);
+      
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': responseData};
+      } else {
+        return {'success': false, 'error': responseData};
+      }
+    } catch (e) {
+      print('Error starting negotiation: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
   static Future<Map<String, dynamic>> acceptBooking(int bookingId) async {
     try {
       print('Accepting booking: $bookingId');
@@ -1287,6 +1363,97 @@ class ApiService {
       }
     } catch (e) {
       print('Cancel booking error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Reject booking during negotiation
+  static Future<Map<String, dynamic>> rejectBooking(int bookingId) async {
+    try {
+      print('Rejecting booking: $bookingId');
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/reject/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Reject booking error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Propose price during negotiation (both customer and provider)
+  static Future<Map<String, dynamic>> proposePrice(int bookingId, double price) async {
+    try {
+      print('Proposing price: $price for booking: $bookingId');
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/propose_price/'),
+        headers: await _getHeaders(includeAuth: true),
+        body: jsonEncode({'price': price}),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Propose price error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Accept proposed price (both customer and provider)
+  static Future<Map<String, dynamic>> acceptPrice(int bookingId) async {
+    try {
+      print('Accepting price for booking: $bookingId');
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/accept_price/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Accept price error: $e');
       return {'success': false, 'error': {'message': e.toString()}};
     }
   }
@@ -1416,17 +1583,58 @@ class ApiService {
     }
   }
   
-  // Get list of verified providers (optionally filtered by service category)
-  static Future<Map<String, dynamic>> getProviders({int? serviceCategoryId}) async {
+  // Get list of verified providers with filtering options
+  static Future<Map<String, dynamic>> getProviders({
+    int? serviceCategoryId,
+    String? searchQuery,
+    double? latitude,
+    double? longitude,
+    double? radius,
+    double? minPrice,
+    double? maxPrice,
+    bool? availableOnly,
+    String? sortBy, // 'price_low' or 'price_high'
+    int? page, // Page number for pagination
+  }) async {
     try {
-      print('Fetching providers${serviceCategoryId != null ? " for service: $serviceCategoryId" : ""}');
-      String url = '$baseUrl/providers/';
+      print('Fetching providers with filters');
+      final uri = Uri.parse('$baseUrl/providers/');
+      final queryParams = <String, String>{};
+      
       if (serviceCategoryId != null) {
-        url += '?service=$serviceCategoryId';
+        queryParams['service'] = serviceCategoryId.toString();
+      }
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        queryParams['search'] = searchQuery;
+      }
+      if (latitude != null && longitude != null) {
+        queryParams['latitude'] = latitude.toString();
+        queryParams['longitude'] = longitude.toString();
+        if (radius != null) {
+          queryParams['radius'] = radius.toString();
+        }
+      }
+      if (minPrice != null) {
+        queryParams['min_price'] = minPrice.toString();
+      }
+      if (maxPrice != null) {
+        queryParams['max_price'] = maxPrice.toString();
+      }
+      if (availableOnly == true) {
+        queryParams['available_only'] = 'true';
+      }
+      if (sortBy != null && sortBy.isNotEmpty) {
+        queryParams['sort_by'] = sortBy;
+      }
+      if (page != null) {
+        queryParams['page'] = page.toString();
       }
       
+      final url = uri.replace(queryParameters: queryParams);
+      print('Fetching providers from: $url');
+      
       final response = await http.get(
-        Uri.parse(url),
+        url,
         headers: await _getHeaders(),
       ).timeout(
         const Duration(seconds: 30),
@@ -1464,6 +1672,437 @@ class ApiService {
       return {'success': false, 'error': {'message': 'Network error. Please check your internet connection.'}};
     } catch (e) {
       print('Get providers error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+  
+  // Update provider availability schedule
+  static Future<Map<String, dynamic>> updateProviderAvailability({
+    String? availableFromDay,
+    String? availableToDay,
+    String? availableStartTime,
+    String? availableEndTime,
+  }) async {
+    try {
+      print('Updating provider availability schedule');
+      final body = <String, dynamic>{};
+      if (availableFromDay != null) {
+        body['available_from_day'] = availableFromDay;
+      }
+      if (availableToDay != null) {
+        body['available_to_day'] = availableToDay;
+      }
+      if (availableStartTime != null) {
+        body['available_start_time'] = availableStartTime;
+      }
+      if (availableEndTime != null) {
+        body['available_end_time'] = availableEndTime;
+      }
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/providers/update_availability/'),
+        headers: await _getHeaders(includeAuth: true),
+        body: jsonEncode(body),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      print('Update availability response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Update availability error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+  
+  // Register FCM token for push notifications
+  static Future<Map<String, dynamic>> registerFcmToken(String fcmToken) async {
+    try {
+      print('📱 Registering FCM token');
+      print('   Token length: ${fcmToken.length}');
+      print('   Token preview: ${fcmToken.substring(0, fcmToken.length > 50 ? 50 : fcmToken.length)}...');
+      
+      final headers = await _getHeaders(includeAuth: true);
+      print('   Request URL: $baseUrl/auth/users/register_fcm_token/');
+      print('   Headers: ${headers.keys}');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/users/register_fcm_token/'),
+        headers: headers,
+        body: jsonEncode({'fcm_token': fcmToken}),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      print('📥 Register FCM token response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        print('✅ FCM token registered successfully');
+        return {'success': true, 'data': data};
+      } else {
+        final errorBody = response.body;
+        print('❌ FCM token registration failed: $errorBody');
+        try {
+          final errorData = jsonDecode(errorBody);
+          return {'success': false, 'error': errorData};
+        } catch (e) {
+          return {'success': false, 'error': {'message': errorBody}};
+        }
+      }
+    } catch (e) {
+      print('❌ Register FCM token error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+  
+  // Update provider price range
+  static Future<Map<String, dynamic>> updateProviderPriceRange({
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    try {
+      print('Updating provider price range: min=$minPrice, max=$maxPrice');
+      final body = <String, dynamic>{};
+      if (minPrice != null) {
+        body['min_price'] = minPrice;
+      }
+      if (maxPrice != null) {
+        body['max_price'] = maxPrice;
+      }
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/providers/update_price_range/'),
+        headers: await _getHeaders(includeAuth: true),
+        body: jsonEncode(body),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      print('Update price range response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Update price range error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Get wallet balance
+  static Future<Map<String, dynamic>> getWalletBalance() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/wallets/balance/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'balance': data['balance']};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Get wallet balance error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Add money to wallet
+  static Future<Map<String, dynamic>> addMoneyToWallet(double amount, String paymentMethod) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/wallets/add_money/'),
+        headers: await _getHeaders(includeAuth: true),
+        body: jsonEncode({
+          'amount': amount,
+          'payment_method': paymentMethod,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'balance': data['balance'], 'message': data['message']};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Add money to wallet error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Get wallet transactions
+  static Future<Map<String, dynamic>> getWalletTransactions() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/wallets/transactions/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Get wallet transactions error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Pay for booking
+  static Future<Map<String, dynamic>> payBooking(int bookingId) async {
+    try {
+      final headers = await _getHeaders(includeAuth: true);
+      print('💳 Paying for booking: $bookingId');
+      print('💳 URL: $baseUrl/bookings/$bookingId/pay/');
+      print('💳 Headers: $headers');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/pay/'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 30));
+      
+      print('💳 Payment response status: ${response.statusCode}');
+      print('💳 Payment response body: ${response.body}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        print('✅ Payment successful: $data');
+        return {'success': true, 'data': data};
+      } else {
+        print('❌ Payment failed: ${response.statusCode} - ${response.body}');
+        try {
+          final errorData = jsonDecode(response.body);
+          return {'success': false, 'error': errorData};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('❌ Pay booking error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Bank Account Management (Provider only)
+  static Future<Map<String, dynamic>> getBankAccounts() async {
+    try {
+      final headers = await _getHeaders(includeAuth: true);
+      print('🏦 Fetching bank accounts from: $baseUrl/bank-accounts/');
+      print('🏦 Headers: $headers');
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/bank-accounts/'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 30));
+      
+      print('🏦 Bank accounts response status: ${response.statusCode}');
+      print('🏦 Bank accounts response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final decodedBody = jsonDecode(response.body);
+        print('🏦 Decoded response: $decodedBody');
+        print('🏦 Response type: ${decodedBody.runtimeType}');
+        
+        // DRF ViewSet list() returns a list directly, not wrapped in 'results'
+        List<dynamic> accountsList;
+        if (decodedBody is List) {
+          accountsList = decodedBody;
+        } else if (decodedBody is Map && decodedBody.containsKey('results')) {
+          // Handle paginated response
+          accountsList = decodedBody['results'] ?? [];
+        } else if (decodedBody is Map) {
+          // Try to extract list from any key
+          accountsList = decodedBody.values.firstWhere(
+            (value) => value is List,
+            orElse: () => [],
+          ) as List;
+        } else {
+          accountsList = [];
+        }
+        
+        print('🏦 Extracted accounts list: $accountsList');
+        print('🏦 Number of accounts: ${accountsList.length}');
+        
+        return {'success': true, 'data': accountsList};
+      } else {
+        print('❌ Failed to fetch bank accounts: ${response.statusCode} - ${response.body}');
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('❌ Get bank accounts error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> addBankAccount({
+    required String accountHolderName,
+    required String accountNumber,
+    required String ifscCode,
+    required String bankName,
+    String? branchName,
+    bool isPrimary = false,
+  }) async {
+    try {
+      final headers = await _getHeaders(includeAuth: true);
+      final body = {
+        'account_holder_name': accountHolderName,
+        'account_number': accountNumber,
+        'ifsc_code': ifscCode,
+        'bank_name': bankName,
+        'branch_name': branchName ?? '',
+        'is_primary': isPrimary,
+      };
+      
+      print('🏦 Adding bank account: $body');
+      print('🏦 URL: $baseUrl/bank-accounts/');
+      print('🏦 Headers: $headers');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/bank-accounts/'),
+        headers: headers,
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 30));
+      
+      print('🏦 Response status: ${response.statusCode}');
+      print('🏦 Response body: ${response.body}');
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Bank account added successfully: $data');
+        return {'success': true, 'data': data};
+      } else {
+        print('❌ Bank account addition failed: ${response.statusCode} - ${response.body}');
+        try {
+          final errorData = jsonDecode(response.body);
+          return {'success': false, 'error': errorData};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('❌ Add bank account error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> deleteBankAccount(int accountId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/bank-accounts/$accountId/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 204) {
+        return {'success': true};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Delete bank account error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  // Withdrawal (Provider only)
+  static Future<Map<String, dynamic>> withdrawMoney(int bankAccountId, double amount) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/withdrawals/'),
+        headers: await _getHeaders(includeAuth: true),
+        body: jsonEncode({
+          'bank_account_id': bankAccountId,
+          'amount': amount,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Withdraw money error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getWithdrawals() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/withdrawals/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        try {
+          return {'success': false, 'error': jsonDecode(response.body)};
+        } catch (e) {
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } catch (e) {
+      print('Get withdrawals error: $e');
       return {'success': false, 'error': {'message': e.toString()}};
     }
   }

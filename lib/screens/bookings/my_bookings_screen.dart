@@ -507,8 +507,28 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
       }
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+    final bookingId = booking['id'];
+    if (bookingId == null) {
+      // Return a non-clickable card if bookingId is missing
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Text(
+          'Invalid booking data',
+          style: TextStyle(color: context.mutedForegroundColor),
+        ),
+      );
+    }
+    
+    return GestureDetector(
+      onTap: () => context.push('/booking-details/${bookingId.toString()}'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.cardColor,
@@ -738,6 +758,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
           ),
         ],
       ),
+    ),
     ).animate(delay: Duration(milliseconds: index * 100)).fadeIn(duration: 400.ms).moveX(begin: 20, end: 0);
   }
 }

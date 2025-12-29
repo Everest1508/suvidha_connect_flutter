@@ -25,6 +25,7 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
   bool _isLoadingLocation = false;
   LatLng? _userLocation;
   final MapController _mapController = MapController();
+  double _radius = 30.0; // Default 30 km radius
 
   @override
   void initState() {
@@ -60,6 +61,9 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
   Future<void> _loadProviders() async {
     final providersResult = await ApiService.getProviders(
       serviceCategoryId: _selectedServiceId,
+      latitude: _userLocation != null ? _userLocation!.latitude : null,
+      longitude: _userLocation != null ? _userLocation!.longitude : null,
+      radius: _userLocation != null ? _radius : null, // Apply radius filter when location is available
     );
 
     if (mounted) {
@@ -111,6 +115,9 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
             _mapController.move(_userLocation!, 13.0);
           }
         });
+        
+        // Reload providers with location-based radius filter
+        await _loadProviders();
       }
     } catch (e) {
       print('Error getting location: $e');
@@ -147,7 +154,7 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
               ),
             ),
             
-            // Filter dropdown
+            // Filter dropdowns
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -189,6 +196,56 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
                           _isLoading = true;
                         });
                         await _loadProviders();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<double>(
+                      value: _radius,
+                      decoration: InputDecoration(
+                        labelText: 'Radius',
+                        prefixIcon: Icon(Iconsax.location, size: 18),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        isDense: true,
+                      ),
+                      items: const [
+                        DropdownMenuItem<double>(
+                          value: 5.0,
+                          child: Text('5 km'),
+                        ),
+                        DropdownMenuItem<double>(
+                          value: 10.0,
+                          child: Text('10 km'),
+                        ),
+                        DropdownMenuItem<double>(
+                          value: 15.0,
+                          child: Text('15 km'),
+                        ),
+                        DropdownMenuItem<double>(
+                          value: 20.0,
+                          child: Text('20 km'),
+                        ),
+                        DropdownMenuItem<double>(
+                          value: 30.0,
+                          child: Text('30 km'),
+                        ),
+                        DropdownMenuItem<double>(
+                          value: 50.0,
+                          child: Text('50 km'),
+                        ),
+                      ],
+                      onChanged: (value) async {
+                        if (value != null) {
+                          setState(() {
+                            _radius = value;
+                            _isLoading = true;
+                          });
+                          await _loadProviders();
+                        }
                       },
                     ),
                   ),

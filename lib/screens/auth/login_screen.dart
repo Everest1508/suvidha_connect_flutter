@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
+import '../../services/push_notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? role;
@@ -84,6 +85,8 @@ class _LoginScreenState extends State<LoginScreen> {
           if (statusResult['success'] == true) {
             final statusData = statusResult['data'];
             if (statusData['can_login'] == true) {
+              // Re-register FCM token after successful login
+              await PushNotificationService.reRegisterToken();
               context.go('/home');
             } else {
               // Show verification pending message
@@ -114,9 +117,12 @@ class _LoginScreenState extends State<LoginScreen> {
           } else {
             // Status check failed, but onboarding is complete
             // Try to go to home anyway
+            await PushNotificationService.reRegisterToken();
             context.go('/home');
           }
         } else {
+          // Re-register FCM token after successful login
+          await PushNotificationService.reRegisterToken();
           context.go('/home');
         }
       } else {

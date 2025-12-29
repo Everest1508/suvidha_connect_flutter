@@ -17,7 +17,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -28,7 +29,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -37,9 +39,16 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleSignup() async {
-    if (_nameController.text.isEmpty) {
+    if (_firstNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your name')),
+        const SnackBar(content: Text('Please enter your first name')),
+      );
+      return;
+    }
+
+    if (_lastNameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your last name')),
       );
       return;
     }
@@ -94,7 +103,8 @@ class _SignupScreenState extends State<SignupScreen> {
     print('Registering with role: $role');
 
     final result = await ApiService.register(
-      username: _nameController.text.toLowerCase().replaceAll(' ', '_'),
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
       email: _emailController.text,
       password: _passwordController.text,
       phone: _phoneController.text,
@@ -230,11 +240,20 @@ class _SignupScreenState extends State<SignupScreen> {
               
               const SizedBox(height: 32),
 
-              // Name field
+              // First Name field
               _buildTextField(
-                label: 'Name',
-                controller: _nameController,
+                label: 'First Name',
+                controller: _firstNameController,
                 delay: 100,
+              ),
+              
+              const SizedBox(height: 20),
+
+              // Last Name field
+              _buildTextField(
+                label: 'Last Name',
+                controller: _lastNameController,
+                delay: 150,
               ),
               
               const SizedBox(height: 20),

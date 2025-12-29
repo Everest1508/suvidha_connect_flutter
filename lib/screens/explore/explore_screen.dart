@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
@@ -19,14 +20,85 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   List<dynamic> _providers = [];
+  List<dynamic> _serviceCategories = [];
   bool _isLoading = true;
   String _serviceName = '';
+  int? _selectedServiceId;
+  final TextEditingController _searchController = TextEditingController();
+  bool _useLocationFilter = true; // Enabled by default to show 30km radius providers
+  bool _availableOnly = false;
+  String? _sortBy; // 'price_low' or 'price_high'
+  Position? _userPosition;
+  double _radius = 30.0; // Default 30 km radius
 
   @override
   void initState() {
     super.initState();
     _serviceName = _formatServiceName(widget.serviceId);
+    _loadServiceCategories();
     _loadProviders();
+    _getUserLocation();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _getUserLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+      setState(() {
+        _userPosition = position;
+      });
+    } catch (e) {
+      print('Error getting location: $e');
+    }
+  }
+
+  Future<void> _loadServiceCategories() async {
+    final result = await ApiService.getServiceCategories();
+    if (mounted && result['success'] == true) {
+      final data = result['data'];
+      List<dynamic> categoriesList = [];
+      if (data is List) {
+        categoriesList = data;
+      } else if (data is Map && data.containsKey('results')) {
+        categoriesList = data['results'] as List;
+      }
+      
+      setState(() {
+        _serviceCategories = categoriesList.where((s) => s['is_active'] == true).toList();
+        
+        // Set initial selected service
+        final category = categoriesList.firstWhere(
+          (cat) => cat['slug'] == widget.serviceId,
+          orElse: () => null,
+        );
+        if (category != null) {
+          _selectedServiceId = category['id'];
+          _serviceName = category['name'] ?? _serviceName;
+        }
+      });
+    }
   }
 
   String _formatServiceName(String id) {
@@ -42,31 +114,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Future<void> _loadProviders() async {
     setState(() => _isLoading = true);
     
-    // Get service category ID from slug
-    final categoriesResult = await ApiService.getServiceCategories();
-    int? serviceCategoryId;
-    
-    if (categoriesResult['success'] == true) {
-      final data = categoriesResult['data'];
-      List<dynamic> categoriesList = [];
-      if (data is List) {
-        categoriesList = data;
-      } else if (data is Map && data.containsKey('results')) {
-        categoriesList = data['results'] as List;
-      }
-      
-      final category = categoriesList.firstWhere(
-        (cat) => cat['slug'] == widget.serviceId,
-        orElse: () => null,
-      );
-      
-      if (category != null) {
-        serviceCategoryId = category['id'];
-      }
-    }
-    
-    // Fetch providers for this service
-    final result = await ApiService.getProviders(serviceCategoryId: serviceCategoryId);
+    // Fetch providers with filters
+    final result = await ApiService.getProviders(
+      serviceCategoryId: _selectedServiceId,
+      searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+      latitude: _useLocationFilter && _userPosition != null ? _userPosition!.latitude : null,
+      longitude: _useLocationFilter && _userPosition != null ? _userPosition!.longitude : null,
+      radius: _useLocationFilter ? _radius : null, // Use selected radius
+      availableOnly: _availableOnly ? true : null,
+      sortBy: _sortBy,
+    );
     
     if (mounted) {
       setState(() => _isLoading = false);
@@ -76,6 +133,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
         });
       }
     }
+  }
+
+  void _applyFilters() {
+    _loadProviders();
   }
 
   @override
@@ -93,44 +154,291 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title with filter
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Explore !',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: context.foregroundColor,
+                    // Title
+                    Text(
+                      'Explore Providers',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: context.foregroundColor,
+                      ),
+                    ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Search Bar
+                    Container(
+                      decoration: BoxDecoration(
+                        color: context.cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.borderColor),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search providers...',
+                          hintStyle: TextStyle(color: context.mutedForegroundColor),
+                          prefixIcon: Icon(Iconsax.search_normal, color: context.mutedForegroundColor),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Iconsax.close_circle, color: context.mutedForegroundColor),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _applyFilters();
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        style: TextStyle(color: context.foregroundColor),
+                        onSubmitted: (_) => _applyFilters(),
+                      ),
+                    ).animate(delay: 100.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Filters
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: context.cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.borderColor),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Iconsax.filter, color: AppColors.primary, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Filters',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.foregroundColor,
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Category Filter
+                          DropdownButtonFormField<int?>(
+                            value: _selectedServiceId,
+                            decoration: InputDecoration(
+                              labelText: 'Category',
+                              labelStyle: TextStyle(color: context.mutedForegroundColor),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: context.borderColor),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: context.borderColor),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              isDense: true,
                             ),
-                            GestureDetector(
-                              onTap: () {},
-                              child: Row(
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('All Categories'),
+                              ),
+                              ..._serviceCategories.map((category) {
+                                return DropdownMenuItem<int?>(
+                                  value: category['id'],
+                                  child: Text(category['name'] ?? ''),
+                                );
+                              }),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedServiceId = value;
+                                if (value != null) {
+                                  final category = _serviceCategories.firstWhere(
+                                    (cat) => cat['id'] == value,
+                                    orElse: () => null,
+                                  );
+                                  if (category != null) {
+                                    _serviceName = category['name'] ?? '';
+                                  }
+                                }
+                              });
+                              _applyFilters();
+                            },
+                            style: TextStyle(color: context.foregroundColor),
+                          ),
+                          
+                          const SizedBox(height: 12),
+                          
+                          // Location Filter
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                            Text(
-                              _serviceName,
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 14,
-                              ),
-                            ),
-                                  Icon(
-                                    Iconsax.arrow_down_1,
-                                    color: AppColors.primary,
-                                    size: 16,
+                                  Row(
+                                    children: [
+                                      Icon(Iconsax.location, color: context.mutedForegroundColor, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Near Me',
+                                        style: TextStyle(
+                                          color: context.foregroundColor,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Switch(
+                                    value: _useLocationFilter,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _useLocationFilter = value;
+                                      });
+                                      _applyFilters();
+                                    },
+                                    activeColor: AppColors.primary,
                                   ),
                                 ],
                               ),
+                              // Radius selector (always visible, but disabled when location filter is off)
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<double>(
+                                value: _radius,
+                                decoration: InputDecoration(
+                                  labelText: 'Search Radius',
+                                  labelStyle: TextStyle(color: context.mutedForegroundColor),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: context.borderColor),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: context.borderColor),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  isDense: true,
+                                ),
+                                items: const [
+                                  DropdownMenuItem<double>(
+                                    value: 5.0,
+                                    child: Text('5 km'),
+                                  ),
+                                  DropdownMenuItem<double>(
+                                    value: 10.0,
+                                    child: Text('10 km'),
+                                  ),
+                                  DropdownMenuItem<double>(
+                                    value: 15.0,
+                                    child: Text('15 km'),
+                                  ),
+                                  DropdownMenuItem<double>(
+                                    value: 20.0,
+                                    child: Text('20 km'),
+                                  ),
+                                  DropdownMenuItem<double>(
+                                    value: 30.0,
+                                    child: Text('30 km'),
+                                  ),
+                                  DropdownMenuItem<double>(
+                                    value: 50.0,
+                                    child: Text('50 km'),
+                                  ),
+                                ],
+                                onChanged: _useLocationFilter ? (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _radius = value;
+                                    });
+                                    _applyFilters();
+                                  }
+                                } : null,
+                                style: TextStyle(color: context.foregroundColor),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 12),
+                          
+                          // Available Only Filter
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Iconsax.tick_circle, color: context.mutedForegroundColor, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Available Only',
+                                    style: TextStyle(
+                                      color: context.foregroundColor,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Switch(
+                                value: _availableOnly,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _availableOnly = value;
+                                  });
+                                  _applyFilters();
+                                },
+                                activeColor: AppColors.primary,
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 12),
+                          
+                          // Sort By Price
+                          DropdownButtonFormField<String?>(
+                            value: _sortBy,
+                            decoration: InputDecoration(
+                              labelText: 'Sort By',
+                              labelStyle: TextStyle(color: context.mutedForegroundColor),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: context.borderColor),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: context.borderColor),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              isDense: true,
                             ),
-                          ],
-                        ),
-                      ],
-                    ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                            items: const [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('Default'),
+                              ),
+                              DropdownMenuItem<String?>(
+                                value: 'price_low',
+                                child: Text('Price: Low to High'),
+                              ),
+                              DropdownMenuItem<String?>(
+                                value: 'price_high',
+                                child: Text('Price: High to Low'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _sortBy = value;
+                              });
+                              _applyFilters();
+                            },
+                            style: TextStyle(color: context.foregroundColor),
+                          ),
+                        ],
+                      ),
+                    ).animate(delay: 150.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                     
                     const SizedBox(height: 20),
                     
@@ -278,6 +586,45 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  // Price range
+                  if (provider['min_price'] != null || provider['max_price'] != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Iconsax.dollar_circle, size: 14, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          provider['min_price'] != null && provider['max_price'] != null
+                              ? '₹${provider['min_price']} - ₹${provider['max_price']}'
+                              : provider['min_price'] != null
+                                  ? 'From ₹${provider['min_price']}'
+                                  : 'Up to ₹${provider['max_price']}',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  // Availability indicator
+                  if (provider['is_available'] == true) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Iconsax.tick_circle, size: 14, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Available',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],

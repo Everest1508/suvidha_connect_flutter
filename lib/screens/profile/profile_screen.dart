@@ -43,7 +43,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userName = _userData?['username'] ?? 'User';
+    // Get full name from first_name and last_name, fallback to name field, then username
+    final firstName = _userData?['first_name'] ?? '';
+    final lastName = _userData?['last_name'] ?? '';
+    final fullName = (firstName.isNotEmpty || lastName.isNotEmpty)
+        ? '${firstName} ${lastName}'.trim()
+        : (_userData?['name'] ?? _userData?['username'] ?? 'User');
     final userEmail = _userData?['email'] ?? '';
     final userPhone = _userData?['phone'] ?? '';
     final profilePhoto = _userData?['profile_photo'];
@@ -56,6 +61,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           label: 'Service Requests',
           description: 'View and manage service requests',
           route: '/requests',
+        ),
+      if (userRole == 'provider')
+        _MenuItem(
+          icon: Iconsax.setting_2,
+          label: 'Provider Settings',
+          description: 'Manage availability and pricing',
+          route: '/provider-settings',
+        ),
+      if (userRole == 'provider')
+        _MenuItem(
+          icon: Iconsax.wallet,
+          label: 'Payment Methods',
+          description: 'Manage wallet and bank accounts',
+          route: '/payment-methods',
         ),
       _MenuItem(
         icon: Iconsax.briefcase,
@@ -173,7 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       
                       // Name
                       Text(
-                        userName,
+                        fullName,
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "338834449962",
+    "project_id": "suvidha-2fb5d",
+    "storage_bucket": "suvidha-2fb5d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:338834449962:android:264a3efb58553191448553",
+        "android_client_info": {
+          "package_name": "com.suvidha.suvidha_connect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGbZ9057dbTn7BQDMXr8suOgTORODax94"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -19,7 +19,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _currentPasswordController = TextEditingController();
@@ -31,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isSaving = false;
   File? _selectedImage;
   bool _showPasswordFields = false;
+  
 
   @override
   void initState() {
@@ -40,7 +42,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _currentPasswordController.dispose();
@@ -58,20 +61,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _isLoading = false;
         if (result['success'] == true) {
           _userData = result['data'];
-          // Use name if available, otherwise first_name, otherwise username
-          final name = _userData?['name'] ?? 
-                      _userData?['first_name'] ?? 
-                      _userData?['username'] ?? '';
-          _nameController.text = name;
+          _firstNameController.text = _userData?['first_name'] ?? '';
+          _lastNameController.text = _userData?['last_name'] ?? '';
           _emailController.text = _userData?['email'] ?? '';
           _phoneController.text = _userData?['phone'] ?? '';
           print('📋 Loaded user data: ${_userData}');
+          
         } else {
           print('❌ Failed to load user data: ${result['error']}');
         }
       });
     }
   }
+
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -90,15 +92,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     setState(() => _isSaving = true);
-
-    // Split name into first_name and last_name
-    final nameParts = _nameController.text.trim().split(' ');
-    final firstName = nameParts.isNotEmpty ? nameParts[0] : '';
-    final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
     
     final updateData = {
-      'first_name': firstName,
-      'last_name': lastName,
+      'first_name': _firstNameController.text.trim(),
+      'last_name': _lastNameController.text.trim(),
       'email': _emailController.text.trim(),
       'phone': _phoneController.text.trim(),
     };
@@ -266,11 +263,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       
                       const SizedBox(height: 24),
                       
-                      // Name
+                      // First Name
                       TextFormField(
-                        controller: _nameController,
+                        controller: _firstNameController,
                         decoration: InputDecoration(
-                          labelText: 'Full Name',
+                          labelText: 'First Name',
                           prefixIcon: const Icon(Iconsax.user),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -278,11 +275,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your name';
+                            return 'Please enter your first name';
                           }
                           return null;
                         },
                       ).animate(delay: 200.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Last Name
+                      TextFormField(
+                        controller: _lastNameController,
+                        decoration: InputDecoration(
+                          labelText: 'Last Name',
+                          prefixIcon: const Icon(Iconsax.user),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your last name';
+                          }
+                          return null;
+                        },
+                      ).animate(delay: 250.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                       
                       const SizedBox(height: 16),
                       
@@ -534,6 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
 
   Widget _buildThemeOption(
     BuildContext context,

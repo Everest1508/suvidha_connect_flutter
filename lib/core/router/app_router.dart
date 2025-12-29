@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../services/api_service.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../screens/splash/splash_screen.dart';
 import '../../screens/splash/role_select_screen.dart';
 import '../../screens/auth/login_screen.dart';
@@ -20,10 +22,14 @@ import '../../screens/notifications/notifications_screen.dart';
 import '../../screens/saved/saved_services_screen.dart';
 import '../../screens/requests/provider_requests_screen.dart';
 import '../../screens/bookings/my_bookings_screen.dart';
+import '../../screens/bookings/booking_detail_screen.dart';
+import '../../screens/chat/chat_screen.dart';
 import '../../screens/addresses/saved_addresses_screen.dart';
 import '../../screens/addresses/add_address_screen.dart';
 import '../../screens/reviews/reviews_screen.dart';
 import '../../screens/settings/settings_screen.dart';
+import '../../screens/settings/provider_settings_screen.dart';
+import '../../screens/settings/payment_methods_screen.dart';
 import '../../widgets/bottom_nav.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -177,6 +183,57 @@ final appRouter = GoRouter(
             child: SettingsScreen(),
           ),
         ),
+
+        // Provider Settings
+        GoRoute(
+          path: '/provider-settings',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: ProviderSettingsScreen(),
+          ),
+        ),
+
+        // Payment Methods
+        GoRoute(
+          path: '/payment-methods',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PaymentMethodsScreen(),
+          ),
+        ),
+
+        // Booking Details
+        GoRoute(
+          path: '/booking-details/:bookingId',
+          pageBuilder: (context, state) {
+            final bookingId = state.pathParameters['bookingId'] ?? '';
+            if (bookingId.isEmpty) {
+              // Redirect to home if bookingId is missing
+              return const NoTransitionPage(child: HomeScreen());
+            }
+            return NoTransitionPage(
+              child: BookingDetailScreen(bookingId: bookingId),
+            );
+          },
+        ),
+
+        // Chat Screen
+        GoRoute(
+          path: '/chat/:bookingId',
+          pageBuilder: (context, state) {
+            final bookingId = state.pathParameters['bookingId'] ?? '';
+            if (bookingId.isEmpty) {
+              // Redirect to home if bookingId is missing
+              return const NoTransitionPage(child: HomeScreen());
+            }
+            final extra = state.extra as Map<String, dynamic>?;
+            return NoTransitionPage(
+              child: ChatScreen(
+                bookingId: bookingId,
+                customerId: extra?['customerId'],
+                providerId: extra?['providerId'],
+              ),
+            );
+          },
+        ),
       ],
     ),
 
@@ -238,10 +295,232 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+    final isHomeScreen = location == '/home';
+    
     return Scaffold(
       body: child,
-      bottomNavigationBar: BottomNav(
-        currentIndex: _calculateSelectedIndex(context),
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          BottomNav(
+            currentIndex: _calculateSelectedIndex(context),
+          ),
+          // Floating widget above bottom nav (only on home screen)
+          if (isHomeScreen)
+            Positioned(
+              bottom: 70, // Above the bottom nav
+              left: 16,
+              right: 16,
+              child: _FloatingBookingWidget(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Floating widget to show latest booking for providers
+class _FloatingBookingWidget extends StatefulWidget {
+  @override
+  State<_FloatingBookingWidget> createState() => _FloatingBookingWidgetState();
+}
+
+class _FloatingBookingWidgetState extends State<_FloatingBookingWidget> {
+  Map<String, dynamic>? _latestBooking;
+  bool _isLoading = true;
+  String? _userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLatestBooking();
+  }
+
+  Future<void> _loadLatestBooking() async {
+    final result = await ApiService.getCurrentUserInfo();
+    if (result['success'] == true) {
+      final userData = result['data'];
+      final role = userData['role'] ?? 'customer';
+      
+      if (role == 'provider') {
+        // Get provider bookings
+        final bookingsResult = await ApiService.getProviderRequests();
+        if (bookingsResult['success'] == true) {
+          final bookings = bookingsResult['data'] as List;
+          // Filter bookings that are not completed, cancelled, or payment
+          final activeBookings = bookings.where((b) {
+            final status = b['status'] as String? ?? '';
+            return status != 'completed' && status != 'cancelled' && status != 'payment';
+          }).toList();
+          
+          if (mounted && activeBookings.isNotEmpty) {
+            // Sort by created_at (most recent first)
+            activeBookings.sort((a, b) {
+              final aDate = a['created_at'] as String? ?? '';
+              final bDate = b['created_at'] as String? ?? '';
+              return bDate.compareTo(aDate);
+            });
+            
+            setState(() {
+              _latestBooking = activeBookings.first;
+              _userRole = role;
+              _isLoading = false;
+            });
+            return;
+          }
+        }
+      }
+    }
+    
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _getStatusLabel(String? status) {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'negotiation':
+        return 'Negotiating';
+      case 'accepted':
+        return 'Accepted';
+      case 'in_progress':
+        return 'In Progress';
+      default:
+        return status ?? 'Unknown';
+    }
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'negotiation':
+        return Colors.blue;
+      case 'accepted':
+        return Colors.green;
+      case 'in_progress':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Only show for providers with active bookings
+    if (_userRole != 'provider' || _latestBooking == null || _isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    final booking = _latestBooking!;
+    final status = booking['status'] as String? ?? '';
+    final serviceName = booking['service_name'] as String? ?? 'Service';
+    final customerName = booking['customer_name'] as String? ?? 'Customer';
+    final bookingId = booking['id'];
+
+    return GestureDetector(
+      onTap: () {
+        if (bookingId != null) {
+          context.push('/booking-details/$bookingId');
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _getStatusColor(status).withOpacity(0.3),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Status indicator
+            Container(
+              width: 4,
+              height: 50,
+              decoration: BoxDecoration(
+                color: _getStatusColor(status),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Booking info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Latest Service',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.mutedForegroundColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    serviceName,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: context.foregroundColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    customerName,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.mutedForegroundColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            // Status badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getStatusColor(status).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _getStatusLabel(status),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _getStatusColor(status),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Arrow icon
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: context.mutedForegroundColor,
+            ),
+          ],
+        ),
       ),
     );
   }
