@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
+import '../../utils/icon_mapper.dart';
 import '../../widgets/app_header.dart';
 
 class SavedServicesScreen extends StatefulWidget {
@@ -360,8 +361,10 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
             
             if (services.isNotEmpty) {
               final firstService = services[0];
-              final serviceSlug = firstService['service_category']?['slug'] ?? '';
-              serviceIcon = _getServiceIcon(serviceSlug);
+              final serviceCategory = firstService['service_category'];
+              // Use icon from service category if available, otherwise use slug
+              final iconName = serviceCategory?['icon'] ?? serviceCategory?['slug'] ?? '';
+              serviceIcon = IconMapper.getIconFromName(iconName);
             }
             
             markers.add(
@@ -409,27 +412,9 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
   }
 
   IconData _getServiceIcon(String slug) {
-    switch (slug.toLowerCase()) {
-      case 'ac':
-        return Iconsax.wind;
-      case 'cleaning':
-        return Iconsax.magic_star;
-      case 'plumber':
-        return Iconsax.setting_2;
-      case 'electrician':
-        return Iconsax.flash_1;
-      case 'carpenter':
-        return Iconsax.ruler;
-      case 'car-wash':
-        return Iconsax.car;
-      case 'painter':
-        return Iconsax.brush_1;
-      case 'tv-repair':
-        return Iconsax.monitor;
-      case 'security':
-        return Iconsax.shield_tick;
-      default:
-        return Iconsax.location;
-    }
+    // First try to get icon from the service category's icon field
+    // If slug is provided, try to get icon from slug (for backward compatibility)
+    // Otherwise return location icon as default
+    return IconMapper.getIconFromName(slug);
   }
 }

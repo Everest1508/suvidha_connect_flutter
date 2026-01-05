@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/icon_mapper.dart';
 
 class ServiceCategory {
   final int id;
@@ -314,22 +315,6 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
                           final service = _services[index];
                           final isSelected = _selectedServiceIds.contains(service.id);
                           
-                          // Map icon names to Iconsax icons (same as home screen)
-                          IconData getIcon(String iconName) {
-                            switch (iconName.toLowerCase()) {
-                              case 'ac': return Iconsax.wind;
-                              case 'cleaning': return Iconsax.magic_star;
-                              case 'plumber': return Iconsax.setting_2;
-                              case 'electrician': return Iconsax.flash_1;
-                              case 'carpenter': return Iconsax.ruler;
-                              case 'car-wash': return Iconsax.car;
-                              case 'painter': return Iconsax.brush_1;
-                              case 'tv-repair': return Iconsax.monitor;
-                              case 'security': return Iconsax.shield_tick;
-                              default: return Iconsax.category;
-                            }
-                          }
-                          
                           return GestureDetector(
                             onTap: () => _toggleService(service.id),
                             child: Container(
@@ -347,7 +332,7 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    getIcon(service.icon),
+                                    IconMapper.getIconFromName(service.icon),
                                     size: 32,
                                     color: isSelected
                                         ? Colors.white

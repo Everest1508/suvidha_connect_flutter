@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
+import '../../utils/icon_mapper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -657,21 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final serviceName = service['name'] ?? '';
         final serviceSlug = service['slug'] ?? '';
         
-        // Map icon names to Iconsax icons (simplified - you can expand this)
-        IconData getIcon(String iconName) {
-          switch (iconName.toLowerCase()) {
-            case 'ac': return Iconsax.wind;
-            case 'cleaning': return Iconsax.magic_star;
-            case 'plumber': return Iconsax.setting_2;
-            case 'electrician': return Iconsax.flash_1;
-            case 'carpenter': return Iconsax.ruler;
-            case 'car-wash': return Iconsax.car;
-            case 'painter': return Iconsax.brush_1;
-            case 'tv-repair': return Iconsax.monitor;
-            case 'security': return Iconsax.shield_tick;
-            default: return Iconsax.category;
-          }
-        }
+        // Use IconMapper to get icon from backend icon name
         
         return GestureDetector(
           onTap: () => context.push('/explore/$serviceSlug'),
@@ -699,7 +686,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    getIcon(service['icon'] ?? ''),
+                    IconMapper.getIconFromName(service['icon'] ?? ''),
                     color: AppColors.primary,
                     size: 24,
                   ),

@@ -101,6 +101,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         route: '/settings',
       ),
       _MenuItem(
+        icon: Iconsax.document_text,
+        label: 'Terms & Conditions',
+        description: 'Read our terms and conditions',
+        route: '/terms-conditions',
+      ),
+      _MenuItem(
+        icon: Iconsax.shield_tick,
+        label: 'Privacy Policy',
+        description: 'Learn how we protect your data',
+        route: '/privacy-policy',
+      ),
+      _MenuItem(
+        icon: Iconsax.info_circle,
+        label: 'About Us',
+        description: 'Learn more about Sahayak',
+        route: '/about-us',
+      ),
+      _MenuItem(
         icon: Iconsax.moon,
         label: 'Theme',
         description: 'Change app theme (Light/Dark)',

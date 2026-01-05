@@ -508,6 +508,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ).animate(delay: 550.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                       
+                      const SizedBox(height: 24),
+                      
+                      // Legal & Support Section
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: context.cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.borderColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Legal & Support',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: context.foregroundColor,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildLegalLink(context, 'Terms & Conditions', '/terms-conditions', Iconsax.document_text),
+                            const SizedBox(height: 12),
+                            _buildLegalLink(context, 'Privacy Policy', '/privacy-policy', Iconsax.shield_tick),
+                            const SizedBox(height: 12),
+                            _buildLegalLink(context, 'About Us', '/about-us', Iconsax.info_circle),
+                          ],
+                        ),
+                      ).animate(delay: 600.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
+                      
                       const SizedBox(height: 32),
                       
                       // Save Button
@@ -604,6 +635,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: AppColors.primary,
                 size: 20,
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalLink(BuildContext context, String title, String route, IconData icon) {
+    return InkWell(
+      onTap: () => context.push(route),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.foregroundColor,
+                ),
+              ),
+            ),
+            Icon(
+              Iconsax.arrow_right_3,
+              color: context.mutedForegroundColor,
+              size: 16,
+            ),
           ],
         ),
       ),

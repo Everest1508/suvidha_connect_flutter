@@ -30,6 +30,9 @@ import '../../screens/reviews/reviews_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/settings/provider_settings_screen.dart';
 import '../../screens/settings/payment_methods_screen.dart';
+import '../../screens/legal/terms_conditions_screen.dart';
+import '../../screens/legal/privacy_policy_screen.dart';
+import '../../screens/legal/about_us_screen.dart';
 import '../../widgets/bottom_nav.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -197,6 +200,28 @@ final appRouter = GoRouter(
           path: '/payment-methods',
           pageBuilder: (context, state) => const NoTransitionPage(
             child: PaymentMethodsScreen(),
+          ),
+        ),
+
+        // Legal Screens
+        GoRoute(
+          path: '/terms-conditions',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: TermsConditionsScreen(),
+          ),
+        ),
+
+        GoRoute(
+          path: '/privacy-policy',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PrivacyPolicyScreen(),
+          ),
+        ),
+
+        GoRoute(
+          path: '/about-us',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: AboutUsScreen(),
           ),
         ),
 

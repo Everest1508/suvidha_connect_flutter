@@ -10,8 +10,8 @@ class ApiService {
   // Android Emulator: http://10.0.2.2:8000/api
   // iOS Simulator: http://localhost:8000/api
   // Physical Device: http://YOUR_COMPUTER_IP:8000/api (e.g., http://192.168.1.100:8000/api)
-  // static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
-  static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
+  static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
+  // static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
   
   // Test connection
   static Future<bool> testConnection() async {
@@ -123,7 +123,7 @@ class ApiService {
           'last_name': lastName,
           'email': email,
           'password': password,
-          'password2': password,
+          'password_confirm': password,
           'phone': phone,
           'role': role,
         }),
@@ -141,7 +141,7 @@ class ApiService {
         'last_name': lastName,
         'email': email,
         'password': '***',
-        'password2': '***',
+        'password_confirm': '***',
         'phone': phone,
         'role': role,
       })}');
