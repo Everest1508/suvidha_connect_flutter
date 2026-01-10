@@ -10,8 +10,8 @@ class ApiService {
   // Android Emulator: http://10.0.2.2:8000/api
   // iOS Simulator: http://localhost:8000/api
   // Physical Device: http://YOUR_COMPUTER_IP:8000/api (e.g., http://192.168.1.100:8000/api)
-  static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
-  // static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
+  // static const String baseUrl = 'http://192.168.1.15:8000/api'; // Local development
+  static const String baseUrl = 'https://suvidhaconnect.pythonanywhere.com/api'; // Production URL
   
   // Test connection
   static Future<bool> testConnection() async {
@@ -1363,6 +1363,47 @@ class ApiService {
       }
     } catch (e) {
       print('Cancel booking error: $e');
+      return {'success': false, 'error': {'message': e.toString()}};
+    }
+  }
+  
+  // Delete a booking (for removing from history)
+  static Future<Map<String, dynamic>> deleteBooking(int bookingId) async {
+    try {
+      print('🗑️ Deleting booking: $bookingId');
+      final response = await http.delete(
+        Uri.parse('$baseUrl/bookings/$bookingId/'),
+        headers: await _getHeaders(includeAuth: true),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timed out after 30 seconds');
+        },
+      );
+      
+      print('📥 Delete booking response status: ${response.statusCode}');
+      
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        print('✅ Booking deleted successfully');
+        return {'success': true};
+      } else {
+        try {
+          final errorData = jsonDecode(response.body);
+          print('❌ Delete booking error: $errorData');
+          return {'success': false, 'error': errorData};
+        } catch (e) {
+          print('❌ Delete booking error (parse): ${response.body}');
+          return {'success': false, 'error': {'message': response.body}};
+        }
+      }
+    } on TimeoutException catch (e) {
+      print('⏱️ Delete booking timeout: $e');
+      return {'success': false, 'error': {'message': 'Request timed out. Please check your connection.'}};
+    } on SocketException catch (e) {
+      print('🌐 Delete booking network error: $e');
+      return {'success': false, 'error': {'message': 'Network error. Please check your internet connection.'}};
+    } catch (e) {
+      print('💥 Delete booking error: $e');
       return {'success': false, 'error': {'message': e.toString()}};
     }
   }

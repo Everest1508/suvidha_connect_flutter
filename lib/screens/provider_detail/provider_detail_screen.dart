@@ -149,6 +149,11 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     final averageRating = (provider['average_rating'] as num?)?.toDouble() ?? 0.0;
     final totalReviews = provider['total_reviews'] ?? 0;
     final contact = provider['contact'] ?? '';
+    final isAvailable = provider['is_available'] ?? false;
+    final availableFromDay = provider['available_from_day'];
+    final availableToDay = provider['available_to_day'];
+    final availableStartTime = provider['available_start_time'];
+    final availableEndTime = provider['available_end_time'];
 
     return Scaffold(
       backgroundColor: context.backgroundColor,
@@ -456,6 +461,17 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       const SizedBox(height: 12),
                     ],
                     
+                    // Availability Section
+                    _buildAvailabilityCard(
+                      isAvailable: isAvailable,
+                      availableFromDay: availableFromDay,
+                      availableToDay: availableToDay,
+                      availableStartTime: availableStartTime,
+                      availableEndTime: availableEndTime,
+                      delay: 400,
+                    ),
+                    const SizedBox(height: 12),
+                    
                     // Reviews Section
                     if (_reviews.isNotEmpty) ...[
                       const SizedBox(height: 20),
@@ -583,6 +599,118 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    ).animate(delay: Duration(milliseconds: delay)).fadeIn(duration: 400.ms).moveY(begin: 20, end: 0);
+  }
+
+  String _formatDay(String? day) {
+    if (day == null) return '';
+    // Capitalize first letter
+    return day[0].toUpperCase() + day.substring(1);
+  }
+
+  String _formatTime(String? time) {
+    if (time == null) return '';
+    // Time comes as "HH:MM:SS" or "HH:MM", format to "HH:MM AM/PM"
+    try {
+      final parts = time.split(':');
+      if (parts.length >= 2) {
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+        final period = hour >= 12 ? 'PM' : 'AM';
+        final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+        return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
+      }
+      return time;
+    } catch (e) {
+      return time;
+    }
+  }
+
+  Widget _buildAvailabilityCard({
+    required bool isAvailable,
+    dynamic availableFromDay,
+    dynamic availableToDay,
+    dynamic availableStartTime,
+    dynamic availableEndTime,
+    required int delay,
+  }) {
+    String availabilityText = '';
+    
+    if (availableFromDay != null && availableToDay != null && 
+        availableStartTime != null && availableEndTime != null) {
+      final fromDay = _formatDay(availableFromDay.toString());
+      final toDay = _formatDay(availableToDay.toString());
+      final startTime = _formatTime(availableStartTime.toString());
+      final endTime = _formatTime(availableEndTime.toString());
+      
+      if (fromDay == toDay) {
+        availabilityText = '$fromDay, $startTime - $endTime';
+      } else {
+        availabilityText = '$fromDay - $toDay, $startTime - $endTime';
+      }
+    } else if (isAvailable) {
+      availabilityText = 'Available now';
+    } else {
+      availabilityText = 'Availability not specified';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isAvailable ? Colors.green : AppColors.border,
+          width: isAvailable ? 2 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isAvailable 
+                  ? Colors.green.withOpacity(0.1) 
+                  : context.mutedColor.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isAvailable ? Iconsax.tick_circle : Iconsax.clock,
+              color: isAvailable ? Colors.green : context.mutedForegroundColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      isAvailable ? 'Available' : 'Not Available',
+                      style: TextStyle(
+                        color: isAvailable ? Colors.green : context.mutedForegroundColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  availabilityText,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: context.foregroundColor,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

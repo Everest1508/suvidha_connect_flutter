@@ -38,6 +38,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _loadServiceCategories();
     _loadProviders();
     _getUserLocation();
+    
+    // Listen to search controller changes to update UI
+    _searchController.addListener(() {
+      setState(() {}); // Rebuild to show/hide clear button
+    });
   }
 
   @override
@@ -166,19 +171,26 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     
                     const SizedBox(height: 16),
                     
-                    // Search Bar
+                    // Search Bar - More Prominent
                     Container(
                       decoration: BoxDecoration(
                         color: context.cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.borderColor),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Search providers...',
-                          hintStyle: TextStyle(color: context.mutedForegroundColor),
-                          prefixIcon: Icon(Iconsax.search_normal, color: context.mutedForegroundColor),
+                          hintText: 'Search providers by name, service, or location...',
+                          hintStyle: TextStyle(color: context.mutedForegroundColor, fontSize: 14),
+                          prefixIcon: Icon(Iconsax.search_normal, color: AppColors.primary, size: 22),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
                                   icon: Icon(Iconsax.close_circle, color: context.mutedForegroundColor),
@@ -189,9 +201,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
-                        style: TextStyle(color: context.foregroundColor),
+                        style: TextStyle(color: context.foregroundColor, fontSize: 15),
+                        onChanged: (_) {
+                          // Debounce search - search after user stops typing
+                          Future.delayed(const Duration(milliseconds: 500), () {
+                            if (_searchController.text.length >= 2 || _searchController.text.isEmpty) {
+                              _applyFilters();
+                            }
+                          });
+                        },
                         onSubmitted: (_) => _applyFilters(),
                       ),
                     ).animate(delay: 100.ms).fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),

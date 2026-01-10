@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_extensions.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_header.dart';
 
@@ -129,7 +130,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -140,11 +141,12 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Service Requests',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: context.foregroundColor,
                       ),
                     ).animate().fadeIn(duration: 500.ms).moveY(begin: 20, end: 0),
                     
@@ -153,7 +155,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
                     Text(
                       'Manage your service requests',
                       style: TextStyle(
-                        color: AppColors.mutedForeground,
+                        color: context.mutedForegroundColor,
                         fontSize: 14,
                       ),
                     ).animate(delay: 100.ms).fadeIn(duration: 500.ms),
@@ -176,13 +178,13 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
                             Icon(
                               Iconsax.document,
                               size: 80,
-                              color: AppColors.mutedForeground.withOpacity(0.5),
+                              color: context.mutedForegroundColor.withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No requests yet',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -190,7 +192,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
                             Text(
                               'You will see service requests here',
                               style: TextStyle(
-                                color: AppColors.mutedForeground,
+                                color: context.mutedForegroundColor,
                                 fontSize: 14,
                               ),
                             ),
@@ -224,14 +226,15 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
     final price = request['price'];
     final createdAt = request['created_at'];
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+    return Builder(
+      builder: (context) => Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderColor),
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -244,9 +247,10 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
                   children: [
                     Text(
                       customerName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: context.foregroundColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -283,7 +287,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
             Text(
               description,
               style: TextStyle(
-                color: AppColors.mutedForeground,
+                color: context.mutedForegroundColor,
                 fontSize: 14,
               ),
             ),
@@ -296,14 +300,14 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
               Icon(
                 Iconsax.location,
                 size: 16,
-                color: AppColors.mutedForeground,
+                color: context.mutedForegroundColor,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   address,
                   style: TextStyle(
-                    color: AppColors.mutedForeground,
+                    color: context.mutedForegroundColor,
                     fontSize: 13,
                   ),
                 ),
@@ -318,13 +322,13 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
                 Icon(
                   Iconsax.calendar,
                   size: 16,
-                  color: AppColors.mutedForeground,
+                  color: context.mutedForegroundColor,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _formatDate(scheduledDate),
                   style: TextStyle(
-                    color: AppColors.mutedForeground,
+                    color: context.mutedForegroundColor,
                     fontSize: 13,
                   ),
                 ),
@@ -339,7 +343,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
                 Icon(
                   Iconsax.card,
                   size: 16,
-                  color: AppColors.mutedForeground,
+                  color: context.mutedForegroundColor,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -359,7 +363,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
           Text(
             'Requested ${_formatTimeAgo(createdAt)}',
             style: TextStyle(
-              color: AppColors.mutedForeground,
+              color: context.mutedForegroundColor,
               fontSize: 12,
             ),
           ),
@@ -401,7 +405,8 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
             ),
         ],
       ),
-    ).animate(delay: Duration(milliseconds: index * 100)).fadeIn(duration: 400.ms).moveX(begin: 20, end: 0);
+      ).animate(delay: Duration(milliseconds: index * 100)).fadeIn(duration: 400.ms).moveX(begin: 20, end: 0),
+    );
   }
 }
 

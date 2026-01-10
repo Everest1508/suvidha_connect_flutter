@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             TextButton(
-              onPressed: () => context.push('/bookings'),
+              onPressed: () => context.push('/requests'),
               child: Text(
                 'View All →',
                 style: TextStyle(
@@ -728,7 +728,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () => context.push('/reviews'),
               child: Text(
                 'view all →',
                 style: TextStyle(

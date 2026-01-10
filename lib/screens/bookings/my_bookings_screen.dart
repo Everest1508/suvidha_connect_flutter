@@ -180,6 +180,68 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     }
   }
 
+  Future<void> _deleteBooking(Map<String, dynamic> booking) async {
+    final bookingId = booking['id'];
+    if (bookingId == null) return;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Booking'),
+        content: const Text('Are you sure you want to delete this booking from your history? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Deleting booking...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+
+    final result = await ApiService.deleteBooking(bookingId);
+    
+    if (mounted) {
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking deleted successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        _loadData(); // Refresh the list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result['error']?['message'] ?? 'Failed to delete booking',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _showReviewDialog(Map<String, dynamic> booking) async {
     final providerId = booking['provider']?['id'];
     
@@ -698,8 +760,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 );
               }
               
-              // Review button for completed bookings
-              if (status == 'completed') {
+              // For completed or cancelled bookings, show review/delete options
+              if (status == 'completed' || status == 'cancelled') {
                 final providerId = booking['provider']?['id'];
                 // Extract service category ID again for this builder
                 dynamic serviceCategoryIdRaw;
@@ -712,44 +774,68 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                     ? serviceCategoryIdRaw 
                     : (serviceCategoryIdRaw != null ? int.tryParse(serviceCategoryIdRaw.toString()) : null);
                 
-                final hasReviewed = providerId != null && 
+                final hasReviewed = status == 'completed' && 
+                                   providerId != null && 
                                    _hasReviewed(providerId, serviceCategoryIdForReview);
                 
-                return SizedBox(
-                  width: double.infinity,
-                  child: hasReviewed
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.success),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Iconsax.tick_circle, color: AppColors.success, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Reviewed',
-                                style: TextStyle(
-                                  color: AppColors.success,
-                                  fontWeight: FontWeight.w600,
+                return Column(
+                  children: [
+                    // Review button for completed bookings
+                    if (status == 'completed')
+                      SizedBox(
+                        width: double.infinity,
+                        child: hasReviewed
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.success),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Iconsax.tick_circle, color: AppColors.success, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Reviewed',
+                                      style: TextStyle(
+                                        color: AppColors.success,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : OutlinedButton.icon(
+                                onPressed: () => _showReviewDialog(booking),
+                                icon: const Icon(Iconsax.star),
+                                label: const Text('Write Review'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  side: BorderSide(color: AppColors.primary),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
                                 ),
                               ),
-                            ],
-                          ),
-                        )
-                      : OutlinedButton.icon(
-                          onPressed: () => _showReviewDialog(booking),
-                          icon: const Icon(Iconsax.star),
-                          label: const Text('Write Review'),
+                      ),
+                    // Delete button for completed or cancelled bookings
+                    if (status == 'completed' || status == 'cancelled') ...[
+                      if (status == 'completed') const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _deleteBooking(booking),
+                          icon: const Icon(Iconsax.trash),
+                          label: const Text('Delete from History'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: BorderSide(color: AppColors.primary),
+                            foregroundColor: AppColors.error,
+                            side: BorderSide(color: AppColors.error),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
+                      ),
+                    ],
+                  ],
                 );
               }
               

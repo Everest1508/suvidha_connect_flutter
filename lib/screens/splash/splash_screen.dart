@@ -30,44 +30,53 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     
     if (isLoggedIn) {
-      // User is logged in, get user data to check role
-      final userData = await ApiService.getCurrentUser();
+      // User is logged in, get fresh user data from API to check role
+      final userInfoResult = await ApiService.getCurrentUserInfo();
       
-      if (userData != null && userData['role'] == 'provider') {
-        // Check provider verification status
-        final statusResult = await ApiService.getProviderStatus();
-        if (statusResult['success'] == true) {
-          final statusData = statusResult['data'];
-          
-          // Check if onboarding is complete
-          if (statusData['onboarding_complete'] == false) {
-            // Onboarding not complete, redirect to onboarding step 1
-            if (mounted) context.go('/provider-onboarding/step1');
-            return;
-          }
-          
-          if (statusData['can_login'] == true) {
-            // Provider is verified, go to home
-            if (mounted) context.go('/home');
-            return;
+      if (userInfoResult['success'] == true && userInfoResult['data'] != null) {
+        final userData = userInfoResult['data'];
+        
+        if (userData['role'] == 'provider') {
+          // Check provider verification status
+          final statusResult = await ApiService.getProviderStatus();
+          if (statusResult['success'] == true) {
+            final statusData = statusResult['data'];
+            
+            // Check if onboarding is complete
+            if (statusData['onboarding_complete'] == false) {
+              // Onboarding not complete, redirect to onboarding step 1
+              if (mounted) context.go('/provider-onboarding/step1');
+              return;
+            }
+            
+            if (statusData['can_login'] == true) {
+              // Provider is verified, go to home
+              if (mounted) context.go('/home');
+              return;
+            } else {
+              // Provider not verified, show role select
+              if (mounted) context.go('/role-select');
+              return;
+            }
           } else {
-            // Provider not verified, show role select
-            if (mounted) context.go('/role-select');
-            return;
-          }
-        } else {
-          // Status check failed, assume onboarding might be incomplete
-          // Try to get status to see if provider exists
-          if (statusResult['error']?['message']?.toString().contains('not found') == true) {
-            // Provider profile doesn't exist, redirect to onboarding
-            if (mounted) context.go('/provider-onboarding/step1');
-            return;
+            // Status check failed, assume onboarding might be incomplete
+            // Try to get status to see if provider exists
+            if (statusResult['error']?['message']?.toString().contains('not found') == true) {
+              // Provider profile doesn't exist, redirect to onboarding
+              if (mounted) context.go('/provider-onboarding/step1');
+              return;
+            }
           }
         }
+        
+        // Consumer or provider with issues, go to home
+        if (mounted) context.go('/home');
+      } else {
+        // Failed to get user info, session might be invalid
+        // Clear session and redirect to role select
+        await ApiService.logout();
+        if (mounted) context.go('/role-select');
       }
-      
-      // Consumer or provider with issues, go to home
-      if (mounted) context.go('/home');
     } else {
       // User not logged in, go to role select
       if (mounted) context.go('/role-select');

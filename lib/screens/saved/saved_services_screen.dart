@@ -27,11 +27,23 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
   LatLng? _userLocation;
   final MapController _mapController = MapController();
   double _radius = 30.0; // Default 30 km radius
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    
+    // Listen to search controller changes
+    _searchController.addListener(() {
+      setState(() {}); // Rebuild to show/hide clear button
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -52,16 +64,17 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
       }
     }
 
+    // Get user location first
+    await _getUserLocation();
+
     // Load providers
     await _loadProviders();
-
-    // Get user location
-    await _getUserLocation();
   }
 
   Future<void> _loadProviders() async {
     final providersResult = await ApiService.getProviders(
       serviceCategoryId: _selectedServiceId,
+      searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
       latitude: _userLocation != null ? _userLocation!.latitude : null,
       longitude: _userLocation != null ? _userLocation!.longitude : null,
       radius: _userLocation != null ? _radius : null, // Apply radius filter when location is available
@@ -128,6 +141,9 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
     }
   }
 
+  void _applyFilters() {
+    _loadProviders();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +160,7 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
               child: Row(
                 children: [
                   Text(
-                    'Explore',
+                    'Saved Services',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -152,6 +168,54 @@ class _SavedServicesScreenState extends State<SavedServicesScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            
+            // Search Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search providers by name, service, or location...',
+                    hintStyle: TextStyle(color: context.mutedForegroundColor, fontSize: 14),
+                    prefixIcon: Icon(Iconsax.search_normal, color: AppColors.primary, size: 22),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Iconsax.close_circle, color: context.mutedForegroundColor),
+                            onPressed: () {
+                              _searchController.clear();
+                              _applyFilters();
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  style: TextStyle(color: context.foregroundColor, fontSize: 15),
+                  onChanged: (_) {
+                    // Debounce search
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (_searchController.text.length >= 2 || _searchController.text.isEmpty) {
+                        _applyFilters();
+                      }
+                    });
+                  },
+                  onSubmitted: (_) => _applyFilters(),
+                ),
               ),
             ),
             
