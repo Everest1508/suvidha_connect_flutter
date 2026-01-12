@@ -178,7 +178,7 @@ class _SplashScreenState extends State<SplashScreen> {
               
               // App name
               Text(
-                'Suvidha',
+                'Sahayak',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
